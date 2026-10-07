@@ -1,0 +1,34 @@
+Audio Router — 先看这里 / Quick start
+========================================
+
+怎么用（三步） / How to use
+  1) 双击 AudioRouter.Desktop.exe        ← 图形界面 / the GUI
+     （只想用命令行的话是 audio-router.exe / or audio-router.exe for the CLI only）
+  2) 把左边的应用拖到右边的音频设备上    / drag an app from the left onto a device on the right
+  3) 如果那个应用【已经在播放】，请重启它
+     —— 路由要在它重新创建音频流后才生效 / restart it if it is already playing
+
+想送给别人听（当麦克风用） / Sending it to another program
+  Windows 没法凭空造一个录音设备，所以需要一块虚拟声卡（例如免费的 VB-CABLE）：
+  · 把播放音乐的程序拖到【CABLE Input】
+  · 在 Discord / OBS / 游戏里把麦克风设成【CABLE Output】
+  · 想自己也听到：把它再拖到扬声器上（再拖一次就是复制）
+  Windows cannot invent a recording device, so this needs a virtual audio cable (e.g. the free
+  VB-CABLE): route the program to CABLE Input, set the other program's microphone to CABLE Output,
+  and drop it on your speakers too if you want to hear it yourself.
+
+常见问题 / Traps
+  · Windows 弹"已保护你的电脑" → "更多信息" → "仍要运行"（下载的 zip 都会带这个标记）
+  · 路由了却没声音 → 先确认第 3 步做了（重启应用）
+  · 要注入【以管理员身份运行】的程序 → 本程序也要用管理员身份运行
+  · 只有 Windows x64 包自带改道用的原生核心（native\）；ARM64 包不含（上游无 ARM64 工具）
+
+命令行速查 / CLI
+  audio-router doctor      这台机器能不能改道 / can this machine redirect
+  audio-router devices     设备列表 / devices
+  audio-router apps        正在发声的程序 / programs with audio
+  audio-router route <pid> <deviceId>
+  audio-router --help      全部命令 / all commands
+
+许可 / License
+  GPL-3.0 · 派生自 audiorouterdev/audio-router · 见 LICENSE.md / NOTICE.md

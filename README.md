@@ -33,26 +33,58 @@ already playing, **restart it** — that is when the routing takes effect.
 The zip also contains `先看这里-怎么用.txt` with these steps and the usual traps
 (including how to get past the SmartScreen prompt on a downloaded zip).
 
-## Sending one program's audio to another program
+## Using it as a microphone (the usual goal)
 
-Routing to a different **speaker** works on its own. The reason most people want this, though, is
-different: you want *another program* (a voice chat, a streaming or recording tool) to receive that
-audio as if it were a microphone. That needs a **virtual audio cable**.
+Routing to another **speaker** needs nothing extra. What most people actually want, though, is to let
+*another program* — Discord, OBS, a game, a voice chat — receive one program's audio **as if it were a
+microphone**. Windows has no user-mode way to create a recording device, so this needs a **virtual audio
+cable**: a small driver that Windows shows as both a playback device and a recording device.
 
-A virtual cable is one device that Windows shows twice — as a playback device and as a recording device:
+### 1. Install a cable
 
-1. Install one, for example [VB-CABLE](https://vb-audio.com/Cable/) (free) or the cable bundled with
-   VoiceMeeter. You will then see **`CABLE Input`** (playback) and **`CABLE Output`** (recording).
-2. In Audio Router, route the program that plays the audio → **`CABLE Input`**.
-3. In the other program (Discord, OBS, a game…), set its **microphone / input** to **`CABLE Output`**.
-4. If that program was already playing audio, restart it — see the note in *Use it* above.
+[VB-CABLE](https://vb-audio.com/Cable/) (free) is the usual choice; VoiceMeeter bundles one as well.
+After installing (the installer may ask you to reboot) you get two extra devices:
 
-Now the other program hears the music, and nobody else does.
+| Device | Windows sees it as | Who uses it |
+| --- | --- | --- |
+| `CABLE Input (VB-Audio Virtual Cable)` | playback device | Audio Router sends the audio **into** it |
+| `CABLE Output (VB-Audio Virtual Cable)` | recording device | the other program **records from** it |
 
-**Want to hear it yourself as well?** Route the program to `CABLE Input` and then **duplicate** it to
-your speakers: in the app, drag it onto the speakers while holding nothing — the second route is a
-duplicate, so it plays on both. (Command line: `audio-router route <pid> <cableId>` followed by
-`audio-router route <pid> <speakerId> --duplicate`.)
+### 2. Route the program into the cable
+
+In Audio Router, drag the program that plays the audio onto **`CABLE Input`**.
+
+### 3. Point the other program at the cable
+
+In Discord / OBS / the game, set its **microphone / input device** to **`CABLE Output`**.
+Some programs follow the Windows default recording device instead — then set that one under
+*Settings → System → Sound → Input*.
+
+### 4. Restart the routed program if it was already playing
+
+The routing takes effect when a program opens its audio stream, so a program that is already playing has
+to be restarted first (see the note in *Use it*).
+
+Now the other side hears the music, and nobody else does.
+
+### Want to hear it yourself as well?
+
+Drop the same program onto your speakers too. **A program that already has a route becomes a duplicate
+when dropped again**, so it plays on the cable *and* on the speakers:
+
+```text
+audio-router route <pid> <cableId>                # into the cable
+audio-router route <pid> <speakerId> --duplicate  # and to your speakers
+```
+
+### If something does not work
+
+| Symptom | What to check |
+| --- | --- |
+| The other program hears silence | its input is not `CABLE Output`; or the routed program was never restarted |
+| Nobody hears anything, not even you | the audio went only into the cable — see *Want to hear it yourself as well?* |
+| The cable devices do not appear in the list | the driver is not installed, or a reboot is still pending |
+| A program loses its routing while Audio Router is closed | nothing can be applied while the app is not running - start Audio Router again (it re-applies saved routings automatically), or run `audio-router apply` |
 ## What works
 
 | | Windows x64 | Linux | macOS |
