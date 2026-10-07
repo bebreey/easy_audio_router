@@ -1,7 +1,9 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using AudioRouter.Core.Diagnostics;
 using AudioRouter.Core.Formatting;
 using AudioRouter.Core.Models;
+using AudioRouter.Core.Routing;
 
 namespace AudioRouter.Core.Backends.Windows;
 
@@ -22,20 +24,61 @@ public sealed class WasapiAudioBackend : IAudioBackend
     public bool IsAvailable => OperatingSystem.IsWindows();
 
     /// <summary>
-    /// **本构建恒为 false**，即使原生核心文件在。
-    ///
-    /// 原因：本构建只实现了"探测原生核心"，**没有实现 IPC 下发**
-    /// （命名管道 + 共享内存那套）。看到文件就报"可改道"等于声称做不到的能力，
-    /// 所以这里如实返回 false，并在 <see cref="Limitation"/> 里说明缺的是什么。
+    /// 能否改道 = 注入工具链是否齐全（位数分开判断，见 <see cref="NativeCoreProbe"/>）。
+    /// 任一套齐全就先报 true；若某次注入缺少**目标位数**的那一套，
+    /// <see cref="ApplyRoute"/> 会返回失败并给出原因 —— 比笼统说"不支持"有用。
     /// </summary>
-    public bool SupportsRouting => false;
+    public bool SupportsRouting => NativeCoreProbe.IsPresent;
 
-    // 复制（同一应用同时输出到多设备）同样依赖注入式核心
-    public bool SupportsDuplication => false;
+    /// <summary>复制到多设备走的是同一条注入链路（flag=2），能力与改道一致。</summary>
+    public bool SupportsDuplication => NativeCoreProbe.IsPresent;
 
-    public string? Limitation => NativeCoreProbe.IsPresent
-        ? "native core found, but this build does not dispatch routes yet (IPC client not implemented)"
-        : "routing needs the injected native core (audio-router.dll + do.exe); not found next to the app";
+    public string? Limitation
+    {
+        get
+        {
+            if (!NativeCoreProbe.IsPresent)
+            {
+                return "routing needs the injected native core (do.exe/do64.exe + audio-router.dll/audio-router64.dll) next to the app";
+            }
+
+            if (NativeCoreProbe.HasX64 && NativeCoreProbe.HasX86) return null;
+
+            return NativeCoreProbe.HasX64
+                ? "only the x64 toolchain is present; 32-bit target apps cannot be routed"
+                : "only the x86 toolchain is present; 64-bit target apps cannot be routed";
+        }
+    }
+
+    /// <summary>
+    /// 真正下发：往 <c>Local\audio-router-file</c> 写路由 blob，再让 do[64].exe 把它注入目标进程。
+    ///
+    /// 失败时把原因留在日志与 <see cref="NativeInjector.LastMessage"/> 里 ——
+    /// 只说"失败"等于让用户自己猜是权限问题还是位数问题。
+    /// </summary>
+    public RoutingOutcome ApplyRoute(int pid, string deviceId, RouteMode mode)
+    {
+        if (!OperatingSystem.IsWindows()) return RoutingOutcome.NotImplemented;
+
+        var duplicate = mode == RouteMode.Duplicate;
+        var result = NativeInjector.Apply(NativeCoreProbe.Directory, pid, deviceId, duplicate);
+
+        StartupLog.Write($"inject: apply pid={pid} device='{deviceId}' duplicate={duplicate} → {(result.Ok ? "ok" : result.Message)}");
+
+        return result.Ok ? RoutingOutcome.Applied : RoutingOutcome.Failed;
+    }
+
+    /// <summary>解除改道 = 再注入一次并把标志置 0（上游的 unload 语义），而不是"什么都不做"。</summary>
+    public RoutingOutcome RemoveRoute(int pid, string deviceId)
+    {
+        if (!OperatingSystem.IsWindows()) return RoutingOutcome.NotImplemented;
+
+        var result = NativeInjector.Apply(NativeCoreProbe.Directory, pid, null, false);
+
+        StartupLog.Write($"inject: remove pid={pid} → {(result.Ok ? "ok" : result.Message)}");
+
+        return result.Ok ? RoutingOutcome.Applied : RoutingOutcome.Failed;
+    }
 
     public IReadOnlyList<AudioDevice> EnumerateDevices()
     {

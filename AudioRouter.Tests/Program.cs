@@ -1,6 +1,7 @@
 using System.Text;
 using AudioRouter.Core.Backends;
 using AudioRouter.Core.Backends.Linux;
+using AudioRouter.Core.Backends.Windows;
 using AudioRouter.Core.Formatting;
 using AudioRouter.Core.Localization;
 using AudioRouter.Core.Models;
@@ -22,8 +23,15 @@ internal static class Program
     private static int _passed;
     private static int _failed;
 
-    private static int Main()
+    private static int Main(string[] args)
     {
+        // 手工诊断入口：在真实进程上验证注入链路。
+        // 不放进单元测试的理由很直接 —— 它会真的往别人的进程里注入 DLL。
+        if (args.Length > 0 && args[0] == "--inject-spike")
+        {
+            return RunInjectSpike(args);
+        }
+
         try
         {
             Console.OutputEncoding = Encoding.UTF8;
@@ -48,6 +56,7 @@ internal static class Program
         TestLanguagePackEncoding();
         TestRouteStorePersistence();
         TestRouteStoreDurability();
+        TestNativeRoutingBlob();
         TestRouteKey();
         TestRouteReconciler();
         TestDeviceRouteNotifications();
@@ -65,6 +74,102 @@ internal static class Program
     // ======================================================================
     //  pactl 解析（用录制的真实输出）
     // ======================================================================
+
+    /// <summary>
+    /// 注入可行性验证（spike）。
+    ///
+    /// 用法：<c>AudioRouter.Tests.exe --inject-spike &lt;native目录&gt; &lt;pid&gt; &lt;deviceId|unload&gt; [duplicate]</c>
+    ///
+    /// 为什么单列一个入口：验证"参数能不能被原生核心接受"必须在**真实进程**上做，
+    /// 而单元测试不该去注入别人的进程。所以做成需要显式参数才触发的手工工具。
+    /// </summary>
+    private static int RunInjectSpike(string[] args)
+    {
+        if (args.Length < 4)
+        {
+            Console.WriteLine("usage: --inject-spike <nativeDir> <pid> <deviceId|unload> [duplicate]");
+            return 2;
+        }
+
+        var nativeDirectory = args[1];
+        var pid = int.Parse(args[2]);
+        var deviceId = args[3] == "unload" ? null : args[3];
+        var duplicate = args.Length > 4 && args[4] == "duplicate";
+
+        // spike 里手工指定原生核心目录（正常运行时由 NativeCoreProbe 自己找）
+        NativeCoreProbe.OverrideForTests(nativeDirectory, hasX86: true, hasX64: true);
+
+        var result = AudioRouter.Core.Backends.Windows.NativeInjector.Apply(
+            nativeDirectory, pid, deviceId, duplicate);
+
+        Console.WriteLine("toolchain : " + nativeDirectory);
+        Console.WriteLine("pid       : " + pid);
+        Console.WriteLine("device    : " + (deviceId ?? "(unload)"));
+        Console.WriteLine("duplicate : " + duplicate);
+        Console.WriteLine(result.Ok ? "INJECT OK" : "INJECT FAIL: " + result.Message);
+
+        return result.Ok ? 0 : 1;
+    }
+
+    /// <summary>
+    /// 原生路由 blob 的字节布局。
+    ///
+    /// 这些断言是照着**已经被真实 DLL 接受**的那份实现钉下来的，不是照文档抄的：
+    /// 用这份布局注入一个真实播放进程后，指定默认设备 → 会话出现在默认设备；
+    /// 指定虚拟声卡 → 会话从默认设备消失。所以布局正确性有外部证据支撑。
+    ///
+    /// 上游在 serialize() 里用 assert(pointer == headers_size &amp;&amp; names_pointer == full_size)
+    /// 自我校验，而这两个值都能由下面的常量算出来 —— 布局因此是可推导、可验证的。
+    /// </summary>
+    private static void TestNativeRoutingBlob()
+    {
+        const string device = "{0.0.0.00000000}.{8d5b2917-2555-4a1c-80dd-b74a7f2ce929}";
+
+        Check("blob: struct size is 40 (x64 padding included)", NativeRoutingBlob.StructSize == 40);
+        Check("blob: offsets match routing_params.h",
+            NativeRoutingBlob.OffsetVersion == 0 &&
+            NativeRoutingBlob.OffsetModuleNamePtr == 8 &&
+            NativeRoutingBlob.OffsetPid == 16 &&
+            NativeRoutingBlob.OffsetSessionGuidAndFlag == 20 &&
+            NativeRoutingBlob.OffsetDeviceIdPtr == 24 &&
+            NativeRoutingBlob.OffsetNextGlobalPtr == 32);
+
+        var blob = NativeRoutingBlob.Build(4242, device, NativeRoutingBlob.MakeSessionGuidAndFlag(32, 1));
+
+        Check("blob: total size = struct + UTF-16 name + NUL",
+            blob.Length == 40 + (device.Length + 1) * 2, blob.Length.ToString());
+        Check("blob: version is 0", blob[0] == 0);
+        Check("blob: module_name_ptr is NULL", BitConverter.ToUInt64(blob, 8) == 0);
+        Check("blob: pid at offset 16", BitConverter.ToUInt32(blob, 16) == 4242);
+        Check("blob: session flag at offset 20", BitConverter.ToUInt32(blob, 20) == 0x40000020);
+        Check("blob: device_id_ptr is an OFFSET (struct size), not a real pointer",
+            BitConverter.ToUInt64(blob, 24) == 40);
+        Check("blob: next_global_ptr is NULL", BitConverter.ToUInt64(blob, 32) == 0);
+        Check("blob: device id stored as UTF-16 right after the struct",
+            Encoding.Unicode.GetString(blob, 40, device.Length * 2) == device);
+        Check("blob: name is NUL terminated", blob[^1] == 0);
+
+        // 标志位编码：高 2 位是标志（与上游 MAKE_SESSION_GUID_AND_FLAG 逐位一致）
+        Check("blob: flag 1 (route) lives in the top 2 bits",
+            NativeRoutingBlob.MakeSessionGuidAndFlag(32, 1) == 0x40000020);
+        Check("blob: flag 2 (duplicate)",
+            NativeRoutingBlob.MakeSessionGuidAndFlag(32, 2) == 0x80000020);
+        Check("blob: guid is masked out of the flag bits",
+            NativeRoutingBlob.MakeSessionGuidAndFlag(0xFFFFFFFF, 1) == 0x7FFFFFFF);
+
+        // 卸载：flag=0 且不带设备 ID（上游用这个表示 revert）
+        var unload = NativeRoutingBlob.Build(4242, device, NativeRoutingBlob.FlagUnload);
+        Check("blob: unload has no device id", unload.Length == 40);
+        Check("blob: unload sets device_id_ptr to NULL", BitConverter.ToUInt64(unload, 24) == 0);
+
+        // 会话 GUID 必须每次递增：同一个 GUID 重复注入会被 DLL 当成同一次
+        NativeRoutingBlob.ResetSessionGuidForTests();
+        Check("blob: session guid starts at 1<<5", NativeRoutingBlob.NextSessionGuid() == 32);
+        Check("blob: session guid increments", NativeRoutingBlob.NextSessionGuid() == 33);
+
+        Check("blob: route mode maps to flag 1", NativeRoutingBlob.BuildFlag(false) == 1);
+        Check("blob: duplicate mode maps to flag 2", NativeRoutingBlob.BuildFlag(true) == 2);
+    }
 
     private static void TestSinkParsing()
     {

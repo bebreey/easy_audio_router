@@ -12,6 +12,9 @@ public enum RoutingOutcome
     /// <summary>已记录，但当前平台后端还不能下发（音频未改道）。</summary>
     RecordedOnly,
 
+    /// <summary>尝试下发了但失败（权限不足、工具链缺目标位数、委托进程报错等）。</summary>
+    Failed,
+
     AlreadyRouted,
 
     NotFound,
