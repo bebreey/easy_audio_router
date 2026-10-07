@@ -434,15 +434,32 @@ internal static class Program
             return 1;
         }
 
-        if (!store.Remove(key, args[2]))
+        // 必须走服务层，不能直接改 store：
+        // 原生核心的补丁长在目标进程里，只删记录等于"记录没了、补丁还在"，
+        // 设备一拔一换，那个程序的音频就会指向一个不存在的设备。
+        var routing = new RoutingService(RouteStore.Load(), Backend);
+        var outcome = routing.Unroute(key, args[2]);
+
+        if (outcome == RoutingOutcome.NotFound)
         {
             Error($"no route for '{RouteKey.Describe(key)}' on device {args[2]}");
             return 1;
         }
 
         Console.WriteLine($"unrouted {RouteKey.Describe(key)} from device {args[2]}");
+
+        if (outcome == RoutingOutcome.Applied)
+        {
+            Console.WriteLine("the running program was told to stop using that device");
+            Console.WriteLine("(a program that is already playing may need a restart before you hear the change).");
+        }
+        else
+        {
+            Error("the route was removed, but the unload could not be dispatched - see the log for the reason");
+        }
+
         Console.WriteLine("it will not be re-applied next time the application starts.");
-        return 0;
+        return outcome == RoutingOutcome.Applied ? 0 : 1;
     }
 
     /// <summary>
