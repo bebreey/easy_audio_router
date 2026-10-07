@@ -59,6 +59,10 @@ internal sealed class MainViewModel : ObservableObject
         _timer.Tick += (_, _) => OnTick();
         _timer.Start();
 
+        // 关闭程序时自动还原：补丁长在目标进程里，不主动卸载的话，
+        // 关掉本程序后那些程序仍会继续被改道。保存的路由记录不受影响。
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => RestoreOnExit();
+
         RefreshLive();
     }
 
@@ -412,6 +416,23 @@ internal sealed class MainViewModel : ObservableObject
         target.Routes.Add(chip);
         RecomputeRouteCounts();
         RaiseDerived();
+    }
+    /// <summary>
+    /// 退出前把本进程下发过的路由全部撤销，让音频回到改道之前的状态。
+    /// 只撤销注入，**不删**已保存的路由（下次启动照旧套用）。
+    /// </summary>
+    private void RestoreOnExit()
+    {
+        try
+        {
+            var unloaded = _routing.RestoreAll();
+            StartupLog.Write($"exit: restore done, unloaded={unloaded}");
+        }
+        catch (Exception ex)
+        {
+            // 退出路径上绝不抛异常：还原失败也不该让"关闭时报错"
+            StartupLog.Write($"exit: restore failed: {ex.Message}");
+        }
     }
     public void RemoveRoute(RouteChip? chip)
     {

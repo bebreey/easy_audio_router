@@ -46,6 +46,12 @@ public interface IRoutingService
     RoutingOutcome Move(string key, string fromDeviceId, string toDeviceId, string toDeviceName);
 
     /// <summary>
+    /// 还原：撤销本进程下发过的全部路由（关闭程序时调用）。
+    /// **不碰已保存的路由记录** —— 配置保留，下次启动照旧套用。返回撤销成功的进程数。
+    /// </summary>
+    int RestoreAll();
+
+    /// <summary>
     /// 当前下发通道的**简短**状态（走语言文件，可直接显示）。
     /// 平台细节（为什么不能改道）用 <see cref="Detail"/>，留给 Tooltip / doctor。
     /// </summary>
@@ -196,6 +202,17 @@ public sealed class RoutingService : IRoutingService
 
         if (livePids.Count == 0) return RoutingOutcome.Applied;   // 目标没在跑：记录已改，下次出现时自动套用
         return applied > 0 ? RoutingOutcome.Applied : RoutingOutcome.Failed;
+    }
+    public int RestoreAll()
+    {
+        // 只有 Windows 的原生核心需要"卸载"；其他平台的改道随进程生命周期自然结束
+        if (!OperatingSystem.IsWindows()) return 0;
+
+        var unloaded = AudioRouter.Core.Backends.Windows.AudioRouter.Core.Backends.Windows.NativeInjector.UnloadAll(AudioRouter.Core.Backends.Windows.NativeCoreProbe.Directory);
+
+        StartupLog.Write($"restore: unloaded={unloaded} (saved routes kept; re-applied on next start)");
+
+        return unloaded;
     }
     public string Describe() => _backend.SupportsRouting
         ? Localization.Loc.F("status.routing.active", _backend.Name)

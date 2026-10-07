@@ -119,6 +119,32 @@ internal static class NativeInjector
     /// 下发一次路由（<paramref name="duplicate"/> 为 true 时是"复制到该设备"）。
     /// <paramref name="endpointId"/> 传 null 表示撤销这条路由。
     /// </summary>
+    /// <summary>
+    /// 撤销**本进程下发过**的全部路由（"关闭程序时自动还原"用）。
+    ///
+    /// 只卸载、绝不动已保存的路由记录：记录是用户的配置，下次启动照旧套用；
+    /// 这里要还原的是"音频此刻被改道的状态"。目标进程已经退出时这次调用会失败，
+    /// 那属于正常情况 —— 进程没了，补丁自然也不在了。
+    /// </summary>
+    internal static int UnloadAll(string? nativeDirectory)
+    {
+        var pids = _dispatched
+            .Select(entry => entry.Split('|')[0])
+            .Where(text => int.TryParse(text, out _))
+            .Select(int.Parse)
+            .Distinct()
+            .ToList();
+
+        var unloaded = 0;
+        foreach (var pid in pids)
+        {
+            if (Apply(nativeDirectory, pid, null, false).Ok) unloaded++;
+        }
+
+        // 记录一并清掉：设备列表已被撤销，标记再留着就是错的
+        _dispatched.Clear();
+        return unloaded;
+    }
     internal static NativeInjectionResult Apply(
         string? nativeDirectory,
         int pid,
