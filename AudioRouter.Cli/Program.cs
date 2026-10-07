@@ -322,23 +322,59 @@ internal static class Program
             return 1;
         }
 
-        // 必须拿到可执行文件路径：路由的身份是路径，不是 PID
+        // 路由的身份是「可执行文件路径」，不是「此刻有没有在播」。
+        //
+        // 而原生核心的补丁挂钩的是 IMMDevice::Activate —— 只对**注入之后新建**的音频流生效
+        // （真机验证过）。所以正确用法恰恰是"先注入、后启动应用"，
+        // 要求目标此刻已有会话会把这条正确路径挡在门外。
+        // 会话拿不到时，退回用进程本身的可执行文件路径。
         var session = Backend.EnumerateSessions().FirstOrDefault(s => s.Pid == pid);
-        if (session is null)
+
+        var exePath = session?.ExePath;
+        var processName = session?.ProcessName ?? string.Empty;
+
+        if (string.IsNullOrEmpty(exePath))
         {
-            Error($"pid {pid} has no audio session — route a running application");
+            (exePath, processName) = ResolveProcessIdentity(pid, processName);
+        }
+
+        if (string.IsNullOrEmpty(exePath) && string.IsNullOrEmpty(processName))
+        {
+            Error($"pid {pid} not found — cannot tell which executable to route");
             return 1;
         }
 
-        var key = RouteKey.For(session.ExePath, session.ProcessName);
+        var key = RouteKey.For(exePath, processName);
+
+        // 会话拿不到时的兜底：Windows 看进程模块，Linux 看 /proc/<pid>/exe
+        static (string? ExePath, string ProcessName) ResolveProcessIdentity(int targetPid, string fallbackName)
+        {
+            try
+            {
+                var process = System.Diagnostics.Process.GetProcessById(targetPid);
+                var name = string.IsNullOrEmpty(fallbackName) ? process.ProcessName : fallbackName;
+
+                if (OperatingSystem.IsWindows())
+                {
+                    return (process.MainModule?.FileName, name);
+                }
+
+                var target = File.ResolveLinkTarget($"/proc/{targetPid}/exe", returnFinalTarget: true);
+                return (target?.FullName, name);
+            }
+            catch
+            {
+                return (null, fallbackName);
+            }
+        }
 
         var routing = new RoutingService(RouteStore.Load(), Backend);
         var outcome = routing.Route(new RouteRecord
         {
             Key = key,
-            ExePath = session.ExePath,
-            ProcessName = session.ProcessName,
-            DisplayName = session.DisplayName,
+            ExePath = exePath ?? string.Empty,
+            ProcessName = processName,
+            DisplayName = session?.DisplayName ?? processName,
             DeviceId = deviceId,
             DeviceName = device.FriendlyName,
             Mode = mode,
@@ -356,9 +392,26 @@ internal static class Program
             return 0;
         }
 
-        Console.WriteLine(outcome == RoutingOutcome.Applied
-            ? $"routed   {identity} -> {device.FriendlyName} ({mode}) — audio redirected"
-            : $"recorded {identity} -> {device.FriendlyName} ({mode}) — audio NOT redirected on this platform");
+        Console.WriteLine(outcome switch
+        {
+            // 口径必须精确：注入成功 ≠ 立刻听到效果。
+            // 原生核心只影响**注入之后新建**的音频流，所以正在播放的应用要等它重建音频流
+            // （通常就是重启该应用）才会真的换设备。
+            RoutingOutcome.Applied =>
+                $"routed   {identity} -> {device.FriendlyName} ({mode}) — dispatched; takes effect once the app (re)creates its audio stream (restart it if it is already playing)",
+
+            RoutingOutcome.Failed =>
+                $"FAILED   {identity} -> {device.FriendlyName} ({mode}) — dispatch failed; see the log (elevated targets need Audio Router to run as administrator)",
+
+            RoutingOutcome.DeviceUnavailable =>
+                $"FAILED   {identity} -> {device.FriendlyName} ({mode}) — device unavailable",
+
+            RoutingOutcome.NotImplemented =>
+                $"recorded {identity} -> {device.FriendlyName} ({mode}) — this backend cannot dispatch yet",
+
+            _ =>
+                $"recorded {identity} -> {device.FriendlyName} ({mode}) — audio NOT redirected on this platform",
+        });
         Console.WriteLine(RoutingHint());
         return 0;
     }
