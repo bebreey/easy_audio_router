@@ -189,7 +189,10 @@ public sealed class WasapiAudioBackend : IAudioBackend
         var buckets = new Dictionary<uint, Bucket>();
         var selfPid = (uint)Environment.ProcessId;
 
-        WasapiNative.WithSessionManager(manager =>
+        // 走遍所有在用渲染设备，而不是只看默认设备：
+        // 插上耳机后 Windows 会把默认设备切过去，那时音频仍在原设备上的应用会整片消失。
+        // 按 pid 去重（下面的 buckets），界面里每个应用仍只出现一次。
+        WasapiNative.ForEachRenderSessionManager(manager =>
         {
             IAudioSessionEnumerator? sessions = null;
             try
@@ -245,7 +248,7 @@ public sealed class WasapiAudioBackend : IAudioBackend
             }
 
             return true;
-        }, false);
+        });
 
         return buckets.Select(pair => Build(pair.Key, pair.Value)).ToList();
     }

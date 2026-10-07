@@ -389,6 +389,72 @@ internal static class WasapiNative
     }
 
     /// <summary>按会话维度访问默认渲染设备，body 执行完统一释放 COM 对象。</summary>
+    /// <summary>
+    /// 遍历**所有在用的渲染设备**，对每个设备激活会话管理器并执行 <paramref name="body"/>。
+    ///
+    /// 为什么必须有它：<see cref="WithSessionManager"/> 只看默认设备（GetDefaultAudioEndpoint），
+    /// 但"哪些应用在出声"与"谁是默认设备"无关。插上耳机时 Windows 会把默认设备切过去，
+    /// 那些音频仍在原设备上的应用就会整片从会话列表里消失（用户实测过）。
+    ///
+    /// 只枚举 ACTIVE 端点：失效/已拔出的端点拿不到会话管理器，逐个 Activate 纯属浪费。
+    /// </summary>
+    public static void ForEachRenderSessionManager(Func<IAudioSessionManager2, bool> body)
+    {
+        const uint DeviceStateActive = 0x1;
+
+        IMMDeviceEnumerator? enumerator = null;
+        IMMDeviceCollection? devices = null;
+
+        try
+        {
+            enumerator = CreateEnumerator();
+
+            if (enumerator.EnumAudioEndpoints(EDataFlow.eRender, (DeviceState)DeviceStateActive, out devices) != 0 ||
+                devices is null)
+            {
+                return;
+            }
+
+            if (devices.GetCount(out var count) != 0) return;
+
+            for (uint i = 0; i < count; i++)
+            {
+                IMMDevice? device = null;
+                object? managerObject = null;
+
+                try
+                {
+                    if (devices.Item(i, out device) != 0 || device is null) continue;
+
+                    var iid = IID_IAudioSessionManager2;
+                    if (device.Activate(ref iid, CLSCTX_ALL, IntPtr.Zero, out managerObject) != 0 || managerObject is null)
+                    {
+                        continue;
+                    }
+
+                    body((IAudioSessionManager2)managerObject);
+                }
+                catch
+                {
+                    // 单个设备失败不影响其他设备
+                }
+                finally
+                {
+                    if (managerObject is not null) Marshal.ReleaseComObject(managerObject);
+                    if (device is not null) Marshal.ReleaseComObject(device);
+                }
+            }
+        }
+        catch
+        {
+            // 交给上层
+        }
+        finally
+        {
+            if (devices is not null) Marshal.ReleaseComObject(devices);
+            if (enumerator is not null) Marshal.ReleaseComObject(enumerator);
+        }
+    }
     public static T WithSessionManager<T>(Func<IAudioSessionManager2, T> body, T fallback)
     {
         IMMDeviceEnumerator? enumerator = null;
