@@ -43,6 +43,11 @@ engine on Windows. Saying that up front is more useful than a feature list:
 | Dark UI, drag & drop, context menus, per-app icons, English / 中文 | ✅ tested | ✅ same UI | ✅ same UI |
 | Headless CLI (no desktop environment required) | ✅ tested | ✅ code complete | ✅ |
 
+**Why redirection is not here yet:** on Windows, moving another program's audio requires injecting
+native code into that process (that is how the original project does it). This build neither ships
+that native core (`audio-router.dll` + `do.exe`) nor implements the client that talks to it — writing
+the routing table into the `Local\audio-router-file` shared-memory mapping and launching `do.exe` to
+perform the injection. On Linux the backend **is** implemented; it is only unverified.
 Notes that matter:
 
 - **Upstream 0.10.2 can redirect audio on Windows; this build cannot yet.** If you need redirection
