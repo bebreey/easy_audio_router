@@ -48,6 +48,16 @@ internal static class NativeInjector
     /// </summary>
     internal static string LastMessage { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// 本次进程内已经成功下发过的 pid。
+    ///
+    /// 为什么需要它：duplicate 的语义是"追加"（flag=2 不清理已有设备列表），
+    /// 所以对某个进程的**第一次**下发必须先建立基准（flag=1），否则列表里只剩新设备、
+    /// 默认设备会丢。这个状态天然是**进程本地**的 —— 它描述的是"原生核心当前在那边是什么状态"，
+    /// 进程重启后核心的补丁也随之消失，所以用静态表就是对的。
+    /// </summary>
+    private static readonly HashSet<int> _dispatched = new();
+
     /// <summary>按目标进程位数选注入器与 DLL：x86 → do.exe + audio-router.dll；x64 → do64.exe + audio-router64.dll。</summary>
     private static (string DoExe, string Dll) ToolsFor(bool x86)
         => x86
@@ -106,9 +116,10 @@ internal static class NativeInjector
         string? nativeDirectory,
         int pid,
         string? endpointId,
-        bool duplicate)
+        bool duplicate,
+        string? baseDeviceId = null)
     {
-        var result = ApplyCore(nativeDirectory, pid, endpointId, duplicate);
+        var result = ApplyCore(nativeDirectory, pid, endpointId, duplicate, baseDeviceId);
         LastMessage = result.Ok ? "ok" : result.Message;
         return result;
     }
@@ -117,7 +128,8 @@ internal static class NativeInjector
         string? nativeDirectory,
         int pid,
         string? endpointId,
-        bool duplicate)
+        bool duplicate,
+        string? baseDeviceId)
     {
         if (pid <= 0) return NativeInjectionResult.Failure("invalid pid");
         if (string.IsNullOrEmpty(nativeDirectory)) return NativeInjectionResult.Failure("native core directory not found");
@@ -137,6 +149,21 @@ internal static class NativeInjector
                 $"native toolchain incomplete for {(x86.Value ? "x86" : "x64")} target: missing {missing}");
         }
 
+        // duplicate 的语义（从上游 C++ 反推 + 真机验证）：flag=1 是**替换**整个设备列表，
+        // flag=2 是**追加**。所以对某个进程的第一次下发即使是"复制"，也必须先建立基准，
+        // 否则列表里只剩新设备、默认设备会丢（实测表现为会话从默认设备消失）。
+        if (duplicate && !unloading && !string.IsNullOrEmpty(baseDeviceId) && !_dispatched.Contains(pid))
+        {
+            var baseline = NativeRoutingBlob.Build(
+                (uint)pid,
+                baseDeviceId,
+                NativeRoutingBlob.MakeSessionGuidAndFlag(
+                    NativeRoutingBlob.NextSessionGuid(), NativeRoutingBlob.FlagRoute));
+
+            var baselineResult = SendBlob(nativeDirectory, pid, baseline, x86.Value);
+            if (!baselineResult.Ok) return baselineResult;
+        }
+
         var flag = unloading
             ? NativeRoutingBlob.FlagUnload
             : NativeRoutingBlob.BuildFlag(duplicate);
@@ -146,12 +173,22 @@ internal static class NativeInjector
             : NativeRoutingBlob.MakeSessionGuidAndFlag(NativeRoutingBlob.NextSessionGuid(), flag);
 
         var blob = NativeRoutingBlob.Build((uint)pid, endpointId, sessionGuidAndFlag);
+        var result = SendBlob(nativeDirectory, pid, blob, x86.Value);
 
-        // 关键（踩过的坑）：映射句柄必须活到 do.exe 跑完为止。
-        // 文件映射对象在**最后一个句柄关闭时即被销毁** —— 如果先关闭句柄再启动 do.exe，
-        // do 会打不开映射、拿不到 blob 大小，目标进程里加载的 DLL 也就找不到参数，
-        // DllMain 返回 FALSE，最终表现为 1114「DLL 初始化例程失败」。
-        // 上游用 CHandle 的作用域保证同一件事：inject_dll 调用发生在句柄释放之前。
+        if (result.Ok && !unloading) _dispatched.Add(pid);
+
+        return result;
+    }
+
+    /// <summary>
+    /// 一次实际下发：写映射 → 驱动 do[64].exe。
+    ///
+    /// 映射句柄**必须活到 do.exe 跑完**：文件映射对象在最后一个句柄关闭时销毁，
+    /// 先关句柄再启动 do，它就拿不到参数，目标进程里的 DLL 于是 DllMain 失败
+    /// （表现为误导性的 1114「DLL 初始化例程失败」）。
+    /// </summary>
+    private static NativeInjectionResult SendBlob(string nativeDirectory, int pid, byte[] blob, bool x86)
+    {
         var mapping = IntPtr.Zero;
         var view = IntPtr.Zero;
 
@@ -162,8 +199,8 @@ internal static class NativeInjector
                 return NativeInjectionResult.Failure($"shared memory failed: {mapError}");
             }
 
-            var (doExe, _) = ToolsFor(x86.Value);
-            return RunDelegator(Path.Combine(nativeDirectory, doExe), nativeDirectory, pid, x86.Value);
+            var (doExe, _) = ToolsFor(x86);
+            return RunDelegator(Path.Combine(nativeDirectory, doExe), nativeDirectory, pid, x86);
         }
         finally
         {

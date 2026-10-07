@@ -61,7 +61,18 @@ public sealed class WasapiAudioBackend : IAudioBackend
         if (!OperatingSystem.IsWindows()) return RoutingOutcome.NotImplemented;
 
         var duplicate = mode == RouteMode.Duplicate;
-        var result = NativeInjector.Apply(NativeCoreProbe.Directory, pid, deviceId, duplicate);
+
+        // "复制到设备 X"的语义是"保留当前输出 + 加上 X"。
+        // 原生核心的 flag=2 只负责"追加"，所以第一次下发复制时必须先给它一个基准设备
+        // —— 也就是当前默认设备（实测：少了这一步，默认设备上的输出会丢）。
+        string? baseDeviceId = null;
+        if (duplicate)
+        {
+            baseDeviceId = EnumerateDevices().FirstOrDefault(d => d.IsDefault)?.Id;
+            if (string.IsNullOrEmpty(baseDeviceId)) return RoutingOutcome.DeviceUnavailable;
+        }
+
+        var result = NativeInjector.Apply(NativeCoreProbe.Directory, pid, deviceId, duplicate, baseDeviceId);
 
         StartupLog.Write($"inject: apply pid={pid} device='{deviceId}' duplicate={duplicate} → {(result.Ok ? "ok" : result.Message)}");
 

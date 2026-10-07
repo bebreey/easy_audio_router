@@ -87,7 +87,7 @@ internal static class Program
     {
         if (args.Length < 4)
         {
-            Console.WriteLine("usage: --inject-spike <nativeDir> <pid> <deviceId|unload> [duplicate]");
+            Console.WriteLine("usage: --inject-spike <nativeDir> <pid> <deviceId|unload> [duplicate] [baseDeviceId]");
             return 2;
         }
 
@@ -96,20 +96,28 @@ internal static class Program
         var deviceId = args[3] == "unload" ? null : args[3];
         var duplicate = args.Length > 4 && args[4] == "duplicate";
 
+        // 复制模式下第一次下发必须先给基准设备（见 NativeInjector 里的说明）
+        var baseDeviceId = args.Length > 5 ? args[5] : null;
+
         // spike 里手工指定原生核心目录（正常运行时由 NativeCoreProbe 自己找）
         NativeCoreProbe.OverrideForTests(nativeDirectory, hasX86: true, hasX64: true);
 
-        var result = AudioRouter.Core.Backends.Windows.NativeInjector.Apply(
-            nativeDirectory, pid, deviceId, duplicate);
+        var result = NativeRouterApply(nativeDirectory, pid, deviceId, duplicate, baseDeviceId);
 
         Console.WriteLine("toolchain : " + nativeDirectory);
         Console.WriteLine("pid       : " + pid);
         Console.WriteLine("device    : " + (deviceId ?? "(unload)"));
         Console.WriteLine("duplicate : " + duplicate);
+        Console.WriteLine("baseDevice: " + (baseDeviceId ?? "(none)"));
         Console.WriteLine(result.Ok ? "INJECT OK" : "INJECT FAIL: " + result.Message);
 
         return result.Ok ? 0 : 1;
     }
+
+    private static AudioRouter.Core.Backends.Windows.NativeInjectionResult NativeRouterApply(
+        string nativeDirectory, int pid, string? deviceId, bool duplicate, string? baseDeviceId)
+        => AudioRouter.Core.Backends.Windows.NativeInjector.Apply(
+            nativeDirectory, pid, deviceId, duplicate, baseDeviceId);
 
     /// <summary>
     /// 原生路由 blob 的字节布局。
