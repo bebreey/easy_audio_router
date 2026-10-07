@@ -175,7 +175,20 @@ internal static class NativeInjector
         var blob = NativeRoutingBlob.Build((uint)pid, endpointId, sessionGuidAndFlag);
         var result = SendBlob(nativeDirectory, pid, blob, x86.Value);
 
-        if (result.Ok && !unloading) _dispatched.Add(pid);
+        if (result.Ok)
+        {
+            if (unloading)
+            {
+                // 卸载（flag=0）会撤掉该进程里的**全部**补丁，设备列表随之清空。
+                // 所以要把它从"已下发"里忘掉：否则之后重新下发复制路由时，
+                // 注入器会以为基准已建立，结果列表里只剩新设备、默认设备丢掉。
+                _dispatched.Remove(pid);
+            }
+            else
+            {
+                _dispatched.Add(pid);
+            }
+        }
 
         return result;
     }

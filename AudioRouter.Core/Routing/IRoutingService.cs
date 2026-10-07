@@ -108,8 +108,27 @@ public sealed class RoutingService : IRoutingService
 
         _store.Remove(key, deviceId);
 
+        // 原生核心的"卸载"是整条撤销（flag=0 撤掉该进程里所有补丁），
+        // 所以删掉一条之后，这个应用**剩下的路由必须重新下发** ——
+        // 否则它们会静默失效（RouteReconciler 不会重新下发已经记过的组合）。
+        var reapplied = 0;
+        if (failed == 0 && livePids.Count > 0)
+        {
+            foreach (var livePid in livePids)
+            {
+                foreach (var remaining in _store.Find(key))
+                {
+                    if (_backend.ApplyRoute(livePid, remaining.DeviceId, remaining.Mode) == RoutingOutcome.Applied)
+                    {
+                        reapplied++;
+                    }
+                }
+            }
+        }
+
         StartupLog.Write(
-            $"unroute: key='{key}' device='{deviceId}' livePids=[{string.Join(",", livePids)}] failed={failed}");
+            $"unroute: key='{key}' device='{deviceId}' livePids=[{string.Join(",", livePids)}] " +
+            $"failed={failed} reapplied={reapplied}");
 
         return failed == 0 ? RoutingOutcome.Applied : RoutingOutcome.Failed;
     }
