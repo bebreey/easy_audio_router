@@ -74,7 +74,7 @@ public sealed class WasapiAudioBackend : IAudioBackend
 
         var result = NativeInjector.Apply(NativeCoreProbe.Directory, pid, deviceId, duplicate, baseDeviceId);
 
-        StartupLog.Write($"inject: apply pid={pid} device='{deviceId}' duplicate={duplicate} → {(result.Ok ? "ok" : result.Message)}");
+        StartupLog.Write($"inject: apply pid={pid} device='{deviceId}' duplicate={duplicate} → {(result.Ok ? result.Message : "FAILED: " + result.Message)}");
 
         return result.Ok ? RoutingOutcome.Applied : RoutingOutcome.Failed;
     }
@@ -86,7 +86,7 @@ public sealed class WasapiAudioBackend : IAudioBackend
 
         var result = NativeInjector.Apply(NativeCoreProbe.Directory, pid, null, false);
 
-        StartupLog.Write($"inject: remove pid={pid} → {(result.Ok ? "ok" : result.Message)}");
+        StartupLog.Write($"inject: remove pid={pid} → {(result.Ok ? result.Message : "FAILED: " + result.Message)}");
 
         return result.Ok ? RoutingOutcome.Applied : RoutingOutcome.Failed;
     }
