@@ -11,6 +11,20 @@
 
 ---
 
+## 为什么做这个
+
+起因是和朋友一起玩游戏。我一开始是为了在游戏里给朋友们放点音乐、活跃活跃气氛。
+当时用的是 Soundpad —— 放放音效还行，但它只能播放本地音频文件，想放点音乐就比较麻烦。
+
+后来了解到 [audiorouterdev/audio-router](https://github.com/audiorouterdev/audio-router)
+这个项目，我很高兴，但用起来还不够方便。于是我以它为基础 vibe coding 了现在这个版本，
+主要是想让我和朋友用起来更省事。
+
+它的使用很简单。如果能帮到你，那就最好了。要是觉得有用，别忘了给原项目一个 star ——
+没有它就没有这个项目：**[audiorouterdev/audio-router](https://github.com/audiorouterdev/audio-router)** ⭐
+
+---
+
 ## 先看这里：什么能用，什么还不能
 
 这次改造动的是**界面与工具链**，**没有**在 Windows 上补齐音频改道引擎。

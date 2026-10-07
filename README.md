@@ -11,6 +11,22 @@ Route audio from individual programs to different output devices — a modernize
 
 ---
 
+## Why this exists
+
+It started with a game night. I was playing music for my friends in-game to keep the mood going, and
+I was using Soundpad — which is fine for sound effects, but it only plays local audio files, so
+putting on actual music was a hassle.
+
+Then I found [audiorouterdev/audio-router](https://github.com/audiorouterdev/audio-router) and was
+glad it existed, but it wasn't quite convenient enough for what I wanted. So I took it as the base and
+vibe-coded this version on top of it, mainly to make things easier for me and my friends.
+
+It's easy to use. If it happens to help you too, that's great. And if it turns out useful, don't
+forget to give the original project a star — this wouldn't exist without it:
+**[audiorouterdev/audio-router](https://github.com/audiorouterdev/audio-router)** ⭐
+
+---
+
 ## Read this first: what works, and what does not
 
 This fork modernizes the **interface and tooling**. It does **not** yet ship the audio redirection
