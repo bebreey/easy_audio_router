@@ -5,7 +5,7 @@
     放在仓库根，所有工程自动继承，避免"改一处漏一处"。
   -->
   <PropertyGroup>
-    <Version>0.12.1</Version>
+    <Version>0.12.2</Version>
     <Product>Audio Router</Product>
     <Authors>bebreey</Authors>
     <Company>Audio Router</Company>

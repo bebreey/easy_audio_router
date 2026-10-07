@@ -5,6 +5,72 @@
 
 ---
 
+## [0.12.2] — 2026-10-07
+
+### Fixed / 修复
+
+Every item below came from a real log line or a real action, not from a hunch.
+以下每一条都有真实日志或真实操作作为依据。
+
+- **Device changes no longer shrink the program list.** Sessions are enumerated from every active
+  render device, not just the default one — so plugging in a headset (which switches the default
+  device) no longer makes most programs disappear until you unplug it again.
+  **插拔设备不再让应用列表骤减。** 会话改为遍历所有在用渲染设备，而不是只看默认设备 ——
+  插上耳机（默认设备随之切换）不再让大半应用消失、拔下才回来。
+
+- **Removing a route really unloads it now.** The removal path hardcoded pid 0, so the unload was
+  never dispatched and the patch kept living inside the target process — after a device was
+  unplugged, that program's audio was still pointed at it.
+  **移除路由现在真的会卸载。** 原来硬编码 pid=0，卸载从未下发、进程里的补丁一直留着 ——
+  设备一拔，那个程序的音频仍指向它。
+
+- **\udio-router unroute\ goes through the routing service**, instead of editing the store directly
+  and never touching the backend.
+  **命令行的 \unroute\ 改走服务层**，不再只改记录、完全不碰后端。
+
+- **Removing one route no longer kills the others.** Unloading is all-or-nothing, so the remaining
+  routes for that executable are re-dispatched immediately afterwards.
+  **移除其中一条不再连带废掉其余几条。** 卸载是整条撤销，所以随后立刻把剩余路由重新下发。
+
+- **Dragging an existing route onto another device moves it**, instead of silently returning
+  \NotImplemented\.
+  **把已有路由标签拖到另一台设备 = 移动这条路由**，不再静默失败。
+
+- **The same route is no longer injected twice.** Two dispatch paths shared no state, so one action
+  injected twice; for a duplicate that appended the same device a second time.
+  **同一条路由不再被注入两次。** 两条下发路径不共享状态，一次操作注入两遍；对复制路由，
+  第二次会把同一设备再追加一次。
+
+### Downloads / 下载
+
+| File / 文件 | Platform / 平台 |
+| --- | --- |
+| \AudioRouter-0.12.2-win-x64.zip\ | Windows 10/11 **x64** — GUI + CLI **+ native core**（解压即用 / unzip and run） |
+| \AudioRouter-0.12.2-win-arm64.zip\ | Windows on ARM64 — GUI + CLI；**no native core**（上游无 ARM64 工具，无法改道） |
+| \AudioRouter-0.12.2-linux-x64.zip\ | Linux x64 (glibc) — GUI + CLI（路由走音频服务器 / routing goes through the audio server） |
+| \AudioRouter-0.12.2-linux-arm64.zip\ | Linux ARM64 (glibc) — same as above / 同上 |
+| \AudioRouter-0.12.2-linux-musl-x64.zip\ | Linux x64 musl (Alpine) — same as above / 同上 |
+
+\\\
+b33a41a18d0ad26835fc4b10bc73898e0ba12dcabefa4d9fff71dfb5c33e60fc  AudioRouter-0.12.2-linux-arm64.zip
+3e08835460a4d528864b1863f5be31a5ab45fb45d14f509ed17e3a7fa112621d  AudioRouter-0.12.2-linux-musl-x64.zip
+59ee03398345a011d4c1eed79751f2687b9aa171ed53d18c2f3f8897f9a8f5fa  AudioRouter-0.12.2-linux-x64.zip
+0e137b55e86718a8a3ad0d4a19054fa02aef2f79f0d9e0197247110b0ec22819  AudioRouter-0.12.2-win-arm64.zip
+7070919081cf428a51552ead4a55453e1ffd6e75f2acf89cc2048ef2978c09ab  AudioRouter-0.12.2-win-x64.zip
+\\\
+
+### How this was verified / 本版如何验证
+
+| Item / 项 | Status / 状态 |
+| --- | --- |
+| The packaged build / 打包后的程序 | Extracted into an empty folder and driven by its own CLI: \doctor\ reports *Can redirect audio: yes*, routing a program that had not opened its audio stream yet succeeded, and that program stayed in the list exactly once. 解压到空文件夹、用包里的 CLI 实跑：doctor 报可改道；对一个尚未建流的程序完成改道，且它仍只出现一行。 |
+| Session list on device change / 设备变化时的列表 | The old behaviour was reproduced with the very path that caused it and is gone. 用导致症状的同一条路径复现过旧行为，现已消失。 |
+| Route removal / 移除路由 | Live process: \inject: remove pid=<real> -> ok\, and \unroute: … reapplied=1\ for the remaining route. 真机：真实 pid 的 remove → ok，剩余路由 reapplied=1。 |
+| Repeated injection / 重复注入 | Same process, identical call → *already applied (skipped)*; a different device still injects; the first injection is proven by \udio-router64.dll\ being loaded inside the target. 同进程二次相同 → 跳过；换设备仍注入；首次注入由目标进程已加载 audio-router64.dll 证明。 |
+| **NOT verified / 未验证** | **Dragging a route chip onto a device with the mouse** (the path is built and unit-tested, but I did not perform the drag) and **physically plugging a headset in and out**. 用鼠标实拖路由标签、以及真实插拔耳机这两项我没有做。 |
+| Linux backend / Linux 后端 | Still code-complete, never run against a real PipeWire/PulseAudio server. 仍是代码完成、未在真机验证。 |
+
+---
 ## [0.12.1] — 2026-10-07
 
 ### Packaging: unzip and run / 打包：解压即用
