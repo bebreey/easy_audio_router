@@ -1,4 +1,4 @@
-Audio Router — 先看这里 / Quick start
+Audio Router — readme（怎么用） / how to use
 ========================================
 
 怎么用（三步） / How to use

@@ -30,7 +30,7 @@ original project a star — this wouldn't exist without it.
 **The one thing to know:** a program has to (re)create its audio stream after being routed. If it is
 already playing, **restart it** — that is when the routing takes effect.
 
-The zip also contains `先看这里-怎么用.txt` with these steps and the usual traps
+The zip also contains `readme.txt` with these steps and the usual traps
 (including how to get past the SmartScreen prompt on a downloaded zip).
 
 ## Using it as a microphone (the usual goal)
