@@ -81,15 +81,37 @@ public sealed class RoutingService : IRoutingService
             : RoutingOutcome.RecordedOnly;
     }
 
+    /// <summary>
+    /// 解除一条路由。**卸载必须作用在活着的那个进程上** —— 原生核心的补丁长在目标进程里，
+    /// 目标进程不在了，就没有补丁需要撤销。
+    ///
+    /// 这里曾经硬编码 pid=0，于是卸载从未真正下发过（日志表现为 `inject: remove pid=0 → invalid pid`）。
+    /// 后果不是"少删了一条记录"，而是**目标进程里的补丁一直留着**：
+    /// 设备被拔掉或换掉之后，音频仍指向那个已经不存在的设备。
+    /// </summary>
     public RoutingOutcome Unroute(string key, string deviceId)
     {
         if (!_store.Exists(key, deviceId)) return RoutingOutcome.NotFound;
 
-        _backend.RemoveRoute(0, deviceId);
+        // 同一个可执行文件可能有多个实例，每个实例的进程里各有一份补丁 —— 全都要撤销
+        var livePids = _backend.EnumerateSessions()
+            .Where(s => RouteKey.For(s.ExePath, s.ProcessName) == key)
+            .Select(s => s.Pid)
+            .Distinct()
+            .ToList();
+
+        var failed = 0;
+        foreach (var livePid in livePids)
+        {
+            if (_backend.RemoveRoute(livePid, deviceId) != RoutingOutcome.Applied) failed++;
+        }
+
         _store.Remove(key, deviceId);
 
-        StartupLog.Write($"unroute: key='{key}' device='{deviceId}'");
-        return RoutingOutcome.Applied;
+        StartupLog.Write(
+            $"unroute: key='{key}' device='{deviceId}' livePids=[{string.Join(",", livePids)}] failed={failed}");
+
+        return failed == 0 ? RoutingOutcome.Applied : RoutingOutcome.Failed;
     }
 
     public string Describe() => _backend.SupportsRouting
