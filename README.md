@@ -87,6 +87,18 @@ audio-router route <pid> <speakerId> --duplicate  # and to your speakers
 | Nobody hears anything, not even you | the audio went only into the cable — see *Want to hear it yourself as well?* |
 | The cable devices do not appear in the list | the driver is not installed, or a reboot is still pending |
 | A program loses its routing while Audio Router is closed | nothing can be applied while the app is not running - start Audio Router again (it re-applies saved routings automatically), or run `audio-router apply` |
+## Do not route a game that runs anti-cheat
+
+This program works by **injecting a DLL into whatever you route**. Doing that to a game with anti-cheat
+(CS2/VAC, and most competitive online games) is precisely the kind of tampering those systems are built
+to detect - and a ban is permanent. Nobody can promise you otherwise, so do not test it.
+
+**Route the music player, not the game.** The game keeps playing on its normal device, its process is
+never touched, and you still get what you wanted: music in one place, game sound in another.
+If you want to change the game's own output, use the game's audio settings or the Windows volume mixer -
+neither of those injects anything.
+
+Changed your mind and a game was routed by mistake? Just close the game: the DLL goes away with its process.
 ## What works
 
 | | Windows x64 | Linux | macOS |

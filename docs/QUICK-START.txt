@@ -33,3 +33,10 @@ Audio Router — readme（怎么用） / how to use
 许可 / License
   GPL-3.0 · 派生自 audiorouterdev/audio-router · 见 LICENSE.md / NOTICE.md  · 关闭本程序时，音频会自动还原到改道之前（已保存的路由不受影响，下次启动照旧套用）
   · Closing this program restores the audio to where it was (your saved routes are kept)
+
+⚠ 不要改道开启反作弊的游戏 / Do not route anti-cheat games
+  · 本程序靠【注入 DLL】工作，对 CS2/VAC 这类游戏注入 = 拿账号冒险（封号永久 ✗）
+  · 只改道音乐播放器等普通程序即可：游戏照常走默认设备，进程完全不被碰 ✓
+  · 误改道了游戏？关掉游戏即可，DLL 随进程消失 ✓
+  · This app injects a DLL. Injecting a game with anti-cheat (CS2/VAC) risks a permanent ban.
+    Route ordinary programs (a music player) instead - the game is never touched.
