@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AudioRouter.Cli</RootNamespace>
+    <!-- 命令名短一点，方便脚本调用 -->
+    <AssemblyName>audio-router</AssemblyName>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AudioRouter.Core\AudioRouter.Core.csproj" />
+  </ItemGroup>
+
+  <!-- 语言文件与 GUI 共用同一份（单一来源，不复制内容） -->
+  <ItemGroup>
+    <None Include="..\AudioRouter.Core\Languages\*.json"
+          Link="Languages\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

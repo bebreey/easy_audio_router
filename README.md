@@ -1,79 +1,116 @@
 # Audio Router
 
-I created a similar app that does exactly what CheVolume does, except this is free at least for now. I tried to make a public post about it here on /r/software, but apparently they don't allow any download links to unknown apps in a text post.
+Route audio from individual programs to different output devices — a modernized fork of
+[audiorouterdev/audio-router](https://github.com/audiorouterdev/audio-router).
 
-If you want to test it out, [here's the download link (64-bit).](https://github.com/audiorouterdev/audio-router/releases/download/v0.10.2/AudioRouter-0.10.2.zip)
+> English | [简体中文](README.zh-CN.md)
 
-If you don't have a 64 bit OS, [here's the 32 bit version.](https://github.com/audiorouterdev/audio-router/releases/download/v0.10.2/AudioRouter-0.10.2-32bit.zip)
+![Audio Router](docs/desktop.png)
 
-[Here's a simple gif to show how it's used.](http://i.imgur.com/uq6ApMe.gif)
+**This is a modified version of the original project** — see [NOTICE.md](NOTICE.md).
 
-For all feature requests/bugs/feedback, you can send me a  [PM.](https://www.reddit.com/message/compose/?to=audiorouterdev) I highly appreciate all of them. The thread is now archived, so unfortunately you can't reply to it anymore.
+---
 
-**Version 0.10.2 of Audio Router released!** Download it from the original links above. 
+## Read this first: what works, and what does not
 
-Changelog 0.10.2:
+This fork modernizes the **interface and tooling**. It does **not** yet ship the audio redirection
+engine on Windows. Saying that up front is more useful than a feature list:
 
-* Automatic routing functionality disabled because it caused some problems with certain software.
-* Removed testing license from the executable.
-* Source code released!
+| Capability | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| List output devices, including format (`32 bit float · 48 kHz · 2ch`) | ✅ tested | ✅ code complete | — |
+| List programs playing audio (volume / mute / playing) | ✅ tested | ✅ code complete | — |
+| Real per-app **mute** | ✅ tested | ✅ code complete | — |
+| **Redirect one program's audio to a chosen device** | ❌ **not in this build** — needs the injected native core *and* an IPC client this build does not implement | ⚠️ implemented (`pactl move-sink-input`), **not verified on real PipeWire** | ❌ needs a virtual audio device |
+| Duplicate one program to several devices | ❌ same as above | ❌ needs `module-combine-sink` | ❌ |
+| Saved routings, auto-applied when the app appears again (keyed by **executable path**, so it survives restarts) | ✅ tested | ✅ code complete | ✅ |
+| Dark UI, drag & drop, context menus, per-app icons, English / 中文 | ✅ tested | ✅ same UI | ✅ same UI |
+| Headless CLI (no desktop environment required) | ✅ tested | ✅ code complete | ✅ |
 
-Changelog 0.10.1:
+Notes that matter:
 
-* The bug that blocked some programs from starting in Windows 10 is now fixed.
+- **Upstream 0.10.2 can redirect audio on Windows; this build cannot yet.** If you need redirection
+  today, use the upstream release. This fork's value right now is the UI, the CLI, the cross-platform
+  core, and the routing model.
+- "Code complete, not verified" means exactly that: the Linux backend's *command lines* are covered by
+  tests, but it has never been run against a real PipeWire/PulseAudio server.
+- The app never fabricates data: when something is unavailable it says so (that is why the status bar
+  reads *"Routes recorded only (not dispatched on this platform)"*).
 
-Changelog 0.10:
+## Projects
 
-* New feature: saved routings. Now you can save the routing for an application so when the app starts next time it will be automatically routed(Audio Router must be opened so the app can be automatically routed). The feature will also allow routing applications that can't be routed otherwise. The UI for saving the routing is not very user-friendly at the moment, but it will be improved. Unfortunately apps that need administrator rights can't be automatically routed. This is a new feature, so I'd appreciate reporting all the bugs you come across.
-* Initial licensing implementation.
-* Very minor changes and bug fixes.
+```
+AudioRouter.Core        Cross-platform core (net10.0, zero NuGet/UI dependencies)
+  Backends              IAudioBackend + WASAPI (Windows) / PipeWire-PulseAudio (Linux)
+  Routing               Route persistence keyed by executable path + auto-restore on app launch
+  Localization          External JSON language packs (Languages/ is the single source of truth)
+AudioRouter.Cli         Headless command line — servers, SSH, scripts
+AudioRouter.Desktop     Cross-platform GUI (Avalonia)
+AudioRouter.Tests       Zero-dependency test runner (110 assertions, exit code 0/1)
+AudioRouter.Gui         [ARCHIVED] earlier WPF front-end — see its ARCHIVED.md
+```
 
-Changelog 0.8.5:
+Dependencies point one way: front-ends depend on `Core`; front-ends never depend on each other.
 
-* Audio Router now requires administrator rights to start.
-* A bug that caused the output device not to initialize correctly when routing or duplicating should be now fixed.
-* Few very minor changes.
+## Build & run
 
-Changelog 0.8:
+```powershell
+dotnet build AudioRouter.Managed.slnx -c Debug      # everything (excluding the archived project)
+dotnet run   --project AudioRouter.Desktop          # GUI
+dotnet run   --project AudioRouter.Cli -- doctor    # capability self-check
+dotnet run   --project AudioRouter.Tests            # tests
+```
 
-* Peak meters added to processes that output audio.
-* A bug that caused Audio Router to crash when selecting the output device is now fixed.
+Self-contained publish (no .NET runtime needed on the target machine):
 
-Changelog 0.7.3.2:
+```powershell
+dotnet publish AudioRouter.Desktop -c Release -r win-x64   --self-contained true
+dotnet publish AudioRouter.Cli     -c Release -r linux-x64 --self-contained true
+```
 
-* A bug that caused Audio Router not to start when using Voicemeeter Banana is now fixed.
+The upstream C++ sources (`audio-router/`, `do/`, `bootstrapper/`, `audio-router.sln`) still build
+with Visual Studio; they are unchanged.
 
-Changelog 0.7.3.1:
+## Command line
 
-* A bug that caused Audio Router not to start for some people should be now fixed.
+```text
+audio-router doctor                        platform & capability report (including "can it redirect?")
+audio-router devices [filter]              output devices, with format
+audio-router apps                          programs with audio sessions
+audio-router route <pid> <deviceId>        save a routing (stored per executable path, not PID)
+audio-router unroute <pid|exePath> <deviceId>
+audio-router routes                        saved routings
+audio-router apply                         apply saved routings now (headless)
+audio-router mute <pid> [--off]            real mute
+audio-router lang [list|set|import]        language packs
+```
 
-Changelog 0.7.3:
+`--json` for scripting, `--lang <code>` to override the output language.
+Exit code `0` success / `1` runtime error / `2` usage error.
 
-* Recording device audio cut off after routing should be now fixed(routing to a new device earlier would mute the microphone).
-* A bug related to duplication which might have crashed the target process or made the duplicated audio stream buggy is now fixed.
-* The routing method changed a bit. If the target process won't route anymore(or duplicate), send me a PM.
+## Design conventions
 
-Changelog 0.7.1:
+1. **Never fabricate data.** Missing format, icon or meter stays empty and the UI degrades gracefully.
+2. **Distinguish "applied" from "recorded".** A routing only reports `Applied` when it was really
+   dispatched; a dedicated test fails if a backend claims success it cannot deliver.
+3. **Single source of truth.** Language packs, models, routing logic and MVVM helpers exist once.
+4. **No UI types in the core.** Icons and brushes are `object?` slots filled by each front-end.
 
-* Icons added.
-* More descriptive names for process names.
+## Documentation
 
-Changelog 0.7:
+- [`docs/UI-DESIGN.md`](docs/UI-DESIGN.md) — design tokens, interaction spec, and appendices A.1–A.21
+  recording every delivery round, defect root-cause and verification evidence.
+- [`docs/UPSTREAM-README.md`](docs/UPSTREAM-README.md) — the original project README (preserved).
+- [`NOTICE.md`](NOTICE.md) — attribution, modification statement, third-party licenses.
 
-* New feature: audio duplication. Now you can duplicate the audio stream so it plays on many separate audio devices. This is a new feature, so it probably has some bugs in it. Also, it seems that the duplication doesn't work if the devices have different audio configurations(e.g stereo and 5.1 configurations).
+## License
 
-Changelog 0.6:
+**GPL-3.0** — inherited from the original project (`LICENSE.md` is kept as-is).
+As a modified version, this work **must remain GPL-3.0** and may not be relicensed to a permissive
+license (GPLv3 §5c). Attribution and modification statements are in [`NOTICE.md`](NOTICE.md).
 
-* Greatly improved routing. Now programs like Hearthstone(and probably Spintires) will route aswell.
-* "Soft routing" option added to the route selection dialog. "Soft route" is the old method of routing, which fails more often. It's still included as soft routing, because it won't cut out the currently playing audio streams, unlike the new routing.
-* Metro apps are now possible to route. Unfortunately they still won't route straight out of the box, but if you need route metro apps too, send me a PM and I'll give instructions on how to enable the feature.
-
-Current known bugs:
-
-* Scroll bars slightly cover other UI elements.
-* The UI elements are repositioned wrongly sometimes when an update occurs.
-* Routing audio to a new device does not delete old audio sessions, so the windows volume mixer fills up with unused sessions.
-
-Minimum supported OS version: Windows 7
-
-Since many people have been asking for this, [here's a link](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=audiorouterdev%40gmail%2ecom&lc=FI&item_name=Audio%20Router%20Donation&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted) for PayPal donation if you want to give your support. Naturally, I highly appreciate any amount of donation you are willing to make!
+One caveat worth knowing: `third-party/WTL90_4140_Final/` is under **Common Public License 1.0**,
+which the FSF classifies as *GPL-incompatible* ([reference](https://directory.fsf.org/wiki/License:CPL-1.0)).
+That combination comes from the upstream repository, not from this fork. WTL is used **only** by the
+legacy `audio-router-gui/`; the routing core, the injector and everything in this fork's `AudioRouter.*`
+projects do not depend on it.

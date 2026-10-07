@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:AudioRouter.Desktop.ViewModels"
+        xmlns:conv="clr-namespace:AudioRouter.Desktop.Converters"
+        xmlns:models="clr-namespace:AudioRouter.Core.Models;assembly=AudioRouter.Core"
+        x:Class="AudioRouter.Desktop.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Audio Router"
+        Width="1180" Height="760" MinWidth="920" MinHeight="560"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="44"
+        WindowDecorations="BorderOnly"
+        Background="{StaticResource Brush.Bg.Window}">
+
+  <Window.Resources>
+    <conv:DeviceKindToGeometryConverter x:Key="KindToGeo" />
+    <conv:NameToBrushConverter x:Key="NameToBrush" />
+    <conv:ObjectToBrushConverter x:Key="ToBrush" />
+    <conv:ObjectToImageConverter x:Key="ToImage" />
+    <conv:VolumeToWidthConverter x:Key="VolumeToWidth" />
+    <conv:ToastKindToBrushConverter x:Key="KindToColor" />
+  </Window.Resources>
+
+  <Grid>
+    <DockPanel>
+
+      <!-- ================= 顶部栏 ================= -->
+      <Border DockPanel.Dock="Top" Height="{StaticResource Size.HeaderBar}"
+              Background="{StaticResource Brush.Bg.Surface}"
+              BorderBrush="{StaticResource Brush.Border.Subtle}" BorderThickness="0,0,0,1"
+              PointerPressed="OnTitleBarPointerPressed"
+              DoubleTapped="OnTitleBarDoubleTapped">
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="14,0">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Ellipse Width="9" Height="9" Fill="{StaticResource Brush.Accent}" />
+            <TextBlock Text="Audio Router" Classes="title" VerticalAlignment="Center" />
+            <Border Classes="badge" VerticalAlignment="Center" IsVisible="{Binding IsDemo}">
+              <TextBlock Text="{Binding TextDemoBadge}" Classes="micro" />
+            </Border>
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <Button Classes="icon" ToolTip.Tip="{Binding TextA11yLanguage}"
+                    Click="OnLanguageClick"
+                    AutomationProperties.Name="{Binding TextA11yLanguage}">
+              <Path Data="{x:Static conv:Icons.Globe}" Width="16" Height="16"
+                    Stroke="{StaticResource Brush.Text.Secondary}" StrokeThickness="1.3" Stretch="Uniform" />
+            </Button>
+            <Button Classes="icon" Command="{Binding RefreshCommand}"
+                    ToolTip.Tip="{Binding TextA11yRefresh}"
+                    AutomationProperties.Name="{Binding TextA11yRefresh}">
+              <Path Data="{x:Static conv:Icons.Refresh}" Width="16" Height="16"
+                    Stroke="{StaticResource Brush.Text.Secondary}" StrokeThickness="1.3" Stretch="Uniform" />
+            </Button>
+
+            <!-- 窗口按钮：自绘标题栏（ExtendClientArea + NoChrome 之后系统按钮不再出现） -->
+            <Border Width="1" Height="18" Margin="6,0"
+                    Background="{StaticResource Brush.Border.Subtle}" />
+
+            <Button Classes="titlebar" Click="OnMinimizeClick"
+                    AutomationProperties.Name="{Binding TextA11yMinimize}">
+              <Path Data="{x:Static conv:Icons.WindowMinimize}" Width="11" Height="11"
+                    Stroke="{StaticResource Brush.Text.Secondary}" StrokeThickness="1.3" Stretch="Uniform" />
+            </Button>
+
+            <Button Classes="titlebar" Click="OnMaximizeClick"
+                    AutomationProperties.Name="{Binding TextA11yMaximize}">
+              <Panel>
+                <Path x:Name="MaximizeIcon" Data="{x:Static conv:Icons.WindowMaximize}"
+                      Width="11" Height="11" Stroke="{StaticResource Brush.Text.Secondary}"
+                      StrokeThickness="1.3" Stretch="Uniform" />
+                <Path x:Name="RestoreIcon" Data="{x:Static conv:Icons.WindowRestore}"
+                      Width="11" Height="11" Stroke="{StaticResource Brush.Text.Secondary}"
+                      StrokeThickness="1.3" Stretch="Uniform" IsVisible="False" />
+              </Panel>
+            </Button>
+
+            <Button Classes="titlebar close" Click="OnCloseClick"
+                    AutomationProperties.Name="{Binding TextA11yClose}">
+              <Path Data="{x:Static conv:Icons.WindowClose}" Width="11" Height="11"
+                    Stroke="{StaticResource Brush.Text.Secondary}" StrokeThickness="1.3" Stretch="Uniform" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- ================= 状态栏 ================= -->
+      <!--
+        只保留右侧的路由状态：左边原本是"原生 WASAPI 枚举"（枚举后端的实现细节），
+        对用户没有价值，而且"是否演示数据"头栏已有徽章 —— 重复信息就删掉。
+      -->
+      <Border DockPanel.Dock="Bottom" Height="{StaticResource Size.StatusBar}"
+              Background="{StaticResource Brush.Bg.Surface}"
+              BorderBrush="{StaticResource Brush.Border.Subtle}" BorderThickness="0,1,0,0">
+        <TextBlock Text="{Binding StatusText}" Classes="micro" Margin="14,0"
+                   ToolTip.Tip="{Binding RoutingStatusDetail}"
+                   TextTrimming="CharacterEllipsis"
+                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+      </Border>
+
+      <!-- ================= 主体：左应用 / 右设备 ================= -->
+      <Grid ColumnDefinitions="380,*">
+
+        <!-- ===== 左：应用程序 ===== -->
+        <DockPanel x:Name="AppsPanel" Grid.Column="0" Margin="12,10,6,10">
+
+          <StackPanel DockPanel.Dock="Top" Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{Binding TextAppsSection}" Classes="section" VerticalAlignment="Center" />
+              <Border Classes="badge" VerticalAlignment="Center">
+                <TextBlock Text="{Binding SessionCountText}" Classes="micro" />
+              </Border>
+            </StackPanel>
+
+            <Grid>
+              <TextBox Classes="search" Text="{Binding SearchText}"
+                       PlaceholderText="{Binding TextSearchPlaceholder}"
+                       AutomationProperties.HelpText="{Binding TextA11ySearchHint}" />
+              <Path Data="{x:Static conv:Icons.Search}" Width="15" Height="15" Margin="12,0,0,0"
+                    Stroke="{StaticResource Brush.Text.Tertiary}" StrokeThickness="1.3"
+                    HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False" />
+            </Grid>
+          </StackPanel>
+
+          <!-- 空状态 -->
+          <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,40,0,0"
+                      HorizontalAlignment="Center" IsVisible="{Binding ShowEmptyState}">
+            <Path Data="{x:Static conv:Icons.Empty}" Width="28" Height="28"
+                  Stroke="{StaticResource Brush.Text.Tertiary}" StrokeThickness="1.4" Stretch="Uniform"
+                  HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding TextEmptyNoAudioTitle}" Classes="bodyStrong" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding TextEmptyNoAudioSubtitle}" Classes="micro" HorizontalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,40,0,0"
+                      HorizontalAlignment="Center" IsVisible="{Binding ShowNoMatchState}">
+            <Path Data="{x:Static conv:Icons.Search}" Width="26" Height="26"
+                  Stroke="{StaticResource Brush.Text.Tertiary}" StrokeThickness="1.4" Stretch="Uniform"
+                  HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding TextEmptyNoMatchTitle}" Classes="bodyStrong" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding TextEmptyNoMatchSubtitle}" Classes="micro" HorizontalAlignment="Center" />
+          </StackPanel>
+
+          <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+            <ItemsControl ItemsSource="{Binding SessionGroups}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SessionGroup">
+                  <StackPanel Margin="0,0,0,10">
+                    <StackPanel Orientation="Horizontal" Spacing="7" Margin="4,0,0,6"
+                                IsVisible="{Binding HasItems}">
+                      <Path Data="{x:Static conv:Icons.ChevronRight}" Width="9" Height="9"
+                            Stroke="{StaticResource Brush.Text.Tertiary}" StrokeThickness="1.6"
+                            VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding TitleWithCount}" Classes="micro" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Items}"
+                                  IsVisible="{Binding HasItems}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:AppSession">
+                          <Border Classes="row" Classes.dragSource="{Binding IsDragging}" Padding="8,4"
+                                  PointerPressed="OnDragSourcePointerPressed"
+                                  PointerMoved="OnDragSourcePointerMoved"
+                                  PointerReleased="OnDragSourcePointerReleased"
+                                  PointerCaptureLost="OnDragSourcePointerCaptureLost"
+                                  ContextRequested="OnAppRowContextRequested">
+                            <Grid Height="{StaticResource Size.AppRow}" ColumnDefinitions="Auto,*,Auto,Auto">
+
+                              <!-- 应用图标：取到就用真图标，取不到退回字母头像 -->
+                              <Border Width="{StaticResource Size.Icon}" Height="{StaticResource Size.Icon}"
+                                      CornerRadius="{StaticResource Radius.Md}"
+                                      Background="{Binding DisplayName, Converter={StaticResource NameToBrush}}">
+                                <Grid>
+                                  <TextBlock Text="{Binding Initial}" FontSize="16" FontWeight="SemiBold"
+                                             Foreground="#FF0B1119"
+                                             IsVisible="{Binding !HasIcon}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Image Source="{Binding Icon, Converter={StaticResource ToImage}}"
+                                         Width="26" Height="26"
+                                         IsVisible="{Binding HasIcon}"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Grid>
+                              </Border>
+
+                              <StackPanel Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center" Spacing="3">
+                                <TextBlock Text="{Binding DisplayName}" Classes="bodyStrong"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Subtitle}" Classes="micro" />
+                              </StackPanel>
+
+                              <!-- 路由计数徽章 -->
+                              <Border Grid.Column="2" Classes="badgeAccent" VerticalAlignment="Center"
+                                      Margin="0,0,10,0" IsVisible="{Binding HasRoutes}">
+                                <TextBlock FontSize="11" Foreground="{StaticResource Brush.Accent}"
+                                           Text="{Binding RouteCount, StringFormat='⇢{0}'}" />
+                              </Border>
+
+                              <!-- 静音标记 + 音量 -->
+                              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10"
+                                          VerticalAlignment="Center">
+                                <Path Data="{x:Static conv:Icons.Mute}" Width="15" Height="15"
+                                      Stroke="{StaticResource Brush.State.Warning}" StrokeThickness="1.4"
+                                      Stretch="Uniform" VerticalAlignment="Center"
+                                      IsVisible="{Binding IsMuted}" />
+                                <StackPanel Width="46" Spacing="4" VerticalAlignment="Center">
+                                  <TextBlock Text="{Binding VolumePercent, StringFormat='{}{0}%'}"
+                                             Classes="micro" HorizontalAlignment="Right" />
+                                  <Border Height="4" CornerRadius="2"
+                                          Background="{StaticResource Brush.Bg.Sunken}">
+                                    <Border Height="4" CornerRadius="2" HorizontalAlignment="Left"
+                                            Background="{StaticResource Brush.Accent}"
+                                            Width="{Binding Volume, Converter={StaticResource VolumeToWidth}, ConverterParameter=40}" />
+                                  </Border>
+                                </StackPanel>
+                              </StackPanel>
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+
+        <!-- 移除落点高亮：把 chip 拖回左侧时出现（不吃鼠标事件，避免抢走拖拽） -->
+        <Border Grid.Column="0" Margin="12,10,6,10" CornerRadius="{StaticResource Radius.Lg}"
+                BorderBrush="{StaticResource Brush.State.Danger}" BorderThickness="2"
+                Background="#14FF6B6B" IsHitTestVisible="False"
+                IsVisible="{Binding IsRemoveTarget}" />
+
+        <!-- ===== 右：音频设备 ===== -->
+        <DockPanel Grid.Column="1" Margin="6,10,12,10">
+
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+            <TextBlock Text="{Binding TextDevicesSection}" Classes="section" VerticalAlignment="Center" />
+            <Border Classes="badge" VerticalAlignment="Center">
+              <TextBlock Text="{Binding DeviceCountText}" Classes="micro" />
+            </Border>
+          </StackPanel>
+
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="10">
+
+              <ItemsControl ItemsSource="{Binding AvailableDevices}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:AudioDevice">
+                    <Border Classes="card" Classes.dropTarget="{Binding IsDropTarget}"
+                            Classes.dropRejected="{Binding IsDropRejected}"
+                            Margin="0,0,0,10">
+                      <StackPanel Spacing="10">
+
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <Border Width="{StaticResource Size.Icon}" Height="{StaticResource Size.Icon}"
+                                  CornerRadius="{StaticResource Radius.Md}"
+                                  Background="{StaticResource Brush.Bg.Sunken}">
+                            <Path Data="{Binding Kind, Converter={StaticResource KindToGeo}}"
+                                  Width="18" Height="18" Stroke="{StaticResource Brush.Text.Secondary}"
+                                  StrokeThickness="1.4" Stretch="Uniform"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          </Border>
+
+                          <StackPanel Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center" Spacing="3">
+                            <TextBlock Text="{Binding FriendlyName}" Classes="bodyStrong"
+                                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FriendlyName}" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                              <TextBlock Text="{Binding KindText}" Classes="micro" />
+                              <TextBlock Text="·" Classes="micro" IsVisible="{Binding HasFormat}" />
+                              <TextBlock Text="{Binding FormatText}" Classes="micro"
+                                         IsVisible="{Binding HasFormat}" />
+                            </StackPanel>
+                          </StackPanel>
+
+                          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
+                                      VerticalAlignment="Center">
+                            <Border Classes="badgeAccent" IsVisible="{Binding IsDefault}">
+                              <TextBlock Text="{Binding BadgeDefaultText}" FontSize="11"
+                                         Foreground="{StaticResource Brush.Accent}" />
+                            </Border>
+                            <Border Classes="badgeWarning" IsVisible="{Binding IsUnavailable}">
+                              <TextBlock Text="{Binding BadgeDisabledText}" FontSize="11"
+                                         Foreground="{StaticResource Brush.State.Warning}" />
+                            </Border>
+                          </StackPanel>
+                        </Grid>
+
+                        <!-- 已路由 chip -->
+                        <ItemsControl ItemsSource="{Binding Routes}" IsVisible="{Binding HasRoutes}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <WrapPanel />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:RouteChip">
+                              <Border Classes="chip" Classes.dragSource="{Binding IsDragging}"
+                                      Margin="0,0,8,8" Padding="8,5"
+                                      Background="{StaticResource Brush.Bg.Surface2}"
+                                      CornerRadius="{StaticResource Radius.Sm}"
+                                      PointerPressed="OnDragSourcePointerPressed"
+                                      PointerMoved="OnDragSourcePointerMoved"
+                                      PointerReleased="OnDragSourcePointerReleased"
+                                      PointerCaptureLost="OnDragSourcePointerCaptureLost"
+                                      ContextRequested="OnChipContextRequested">
+                                <Border.Styles>
+                                  <!-- 默认隐藏移除按钮；悬停才出现（两个状态都写在样式里，
+                                       避免局部值压过样式 —— WPF 版踩过这个坑） -->
+                                  <Style Selector="Border.chip Button.remove">
+                                    <Setter Property="IsVisible" Value="False" />
+                                  </Style>
+                                  <Style Selector="Border.chip:pointerover Button.remove">
+                                    <Setter Property="IsVisible" Value="True" />
+                                  </Style>
+                                </Border.Styles>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                  <Border Width="20" Height="20" CornerRadius="{StaticResource Radius.Xs}"
+                                          Background="{Binding DisplayName, Converter={StaticResource NameToBrush}}">
+                                    <Grid>
+                                      <TextBlock Text="{Binding Initial}" FontSize="10" FontWeight="Bold"
+                                                 Foreground="#FF0B1119"
+                                                 IsVisible="{Binding !HasIcon}"
+                                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                      <Image Source="{Binding Icon, Converter={StaticResource ToImage}}"
+                                             Width="18" Height="18"
+                                             IsVisible="{Binding HasIcon}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Grid>
+                                  </Border>
+                                  <TextBlock Text="{Binding DisplayName}" Classes="caption"
+                                             VerticalAlignment="Center" />
+                                  <Border Classes="badge" IsVisible="{Binding IsDuplicate}"
+                                          VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ModeText}" FontSize="10"
+                                               Foreground="{StaticResource Brush.Text.Secondary}" />
+                                  </Border>
+                                  <Path Data="{x:Static conv:Icons.Mute}" Width="13" Height="13"
+                                        Stroke="{StaticResource Brush.State.Warning}" StrokeThickness="1.4"
+                                        Stretch="Uniform" VerticalAlignment="Center"
+                                        IsVisible="{Binding IsMuted}" />
+                                  <Button Classes="remove" Width="20" Height="20" Padding="0"
+                                          CornerRadius="{StaticResource Radius.Xs}"
+                                          Background="Transparent" BorderThickness="0"
+                                          Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RemoveRouteCommand}"
+                                          CommandParameter="{Binding}"
+                                          ToolTip.Tip="{Binding RemoveHint}"
+                                          AutomationProperties.Name="{Binding RemoveText}">
+                                    <Path Data="{x:Static conv:Icons.Close}" Width="9" Height="9"
+                                          Stroke="{StaticResource Brush.Text.Secondary}" StrokeThickness="1.4"
+                                          Stretch="Uniform" HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                                  </Button>
+                                </StackPanel>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- 落点区（拖拽目标） -->
+                        <Border Classes="sunken" Classes.dropActive="{Binding IsDropTarget}"
+                                MinHeight="46" Padding="12"
+                                BorderThickness="1" BorderBrush="{StaticResource Brush.Border.Subtle}"
+                                CornerRadius="{StaticResource Radius.Md}">
+                          <TextBlock Text="{Binding DropHint}" Classes="micro"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <!-- 已禁用 / 已断开分组 -->
+              <StackPanel IsVisible="{Binding HasDisabledDevices}">
+                <Button Classes="ghost" HorizontalAlignment="Left" Margin="0,0,0,8"
+                        Command="{Binding ToggleDisabledCommand}"
+                        Content="{Binding TextDisabledGroup}" />
+
+                <ItemsControl ItemsSource="{Binding DisabledDevices}"
+                              IsVisible="{Binding ShowDisabled}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:AudioDevice">
+                      <Border Classes="card" Margin="0,0,0,8" Opacity="0.6" Padding="12,10">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <Border Width="30" Height="30" CornerRadius="{StaticResource Radius.Sm}"
+                                  Background="{StaticResource Brush.Bg.Sunken}">
+                            <Path Data="{Binding Kind, Converter={StaticResource KindToGeo}}"
+                                  Width="15" Height="15" Stroke="{StaticResource Brush.Text.Disabled}"
+                                  StrokeThickness="1.4" Stretch="Uniform"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          </Border>
+                          <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding FriendlyName}" Classes="bodyStrong"
+                                       Foreground="{StaticResource Brush.Text.Secondary}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding KindText}" Classes="micro"
+                                       Foreground="{StaticResource Brush.Text.Disabled}" />
+                          </StackPanel>
+                          <Border Grid.Column="2" Classes="badge" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding StateText}" FontSize="10"
+                                       Foreground="{StaticResource Brush.Text.Disabled}" />
+                          </Border>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Grid>
+    </DockPanel>
+
+    <!-- ================= Toast 浮层（右下角） ================= -->
+    <ItemsControl ItemsSource="{Binding Toasts}" Margin="0,0,16,42"
+                  HorizontalAlignment="Right" VerticalAlignment="Bottom">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="models:ToastModel">
+          <Border Classes="toast" Margin="0,8,0,0" CornerRadius="{StaticResource Radius.Md}"
+                  Background="{StaticResource Brush.Bg.Surface2}"
+                  BorderBrush="{StaticResource Brush.Border.Strong}" BorderThickness="1"
+                  BoxShadow="{StaticResource Shadow.Float}" MaxWidth="420">
+            <Grid ColumnDefinitions="4,*,Auto,Auto">
+              <Border Background="{Binding Kind, Converter={StaticResource KindToColor}}"
+                      CornerRadius="8,0,0,8" />
+              <TextBlock Grid.Column="1" Text="{Binding Message}" Classes="caption"
+                         Foreground="{StaticResource Brush.Text.Primary}"
+                         Margin="12,10" TextWrapping="Wrap" VerticalAlignment="Center" />
+              <Button Grid.Column="2" Classes="ghost" Content="{Binding ActionText}"
+                      Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ToastActionCommand}"
+                      CommandParameter="{Binding}"
+                      IsVisible="{Binding HasAction}"
+                      ToolTip.Tip="{Binding ActionHint}" />
+              <Button Grid.Column="3" Classes="icon" Width="28" Height="28" Margin="4,0,6,0"
+                      Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).DismissToastCommand}"
+                      CommandParameter="{Binding}"
+                      ToolTip.Tip="{Binding CloseText}"
+                      AutomationProperties.Name="{Binding CloseText}">
+                <Path Data="{x:Static conv:Icons.Close}" Width="9" Height="9"
+                      Stroke="{StaticResource Brush.Text.Tertiary}" StrokeThickness="1.4"
+                      Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Button>
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- ================= 自绘拖拽预览（跟随光标） ================= -->
+    <Border x:Name="DragPreview" IsVisible="False" IsHitTestVisible="False"
+            HorizontalAlignment="Left" VerticalAlignment="Top"
+            Background="{StaticResource Brush.Bg.Surface2}"
+            BorderBrush="{StaticResource Brush.Border.Strong}" BorderThickness="1"
+            CornerRadius="{StaticResource Radius.Sm}" Padding="8,5"
+            BoxShadow="{StaticResource Shadow.Drag}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border x:Name="PreviewAvatar" Width="20" Height="20"
+                CornerRadius="{StaticResource Radius.Xs}"
+                Background="{StaticResource Brush.Accent}">
+          <TextBlock x:Name="PreviewInitial" Text="?" FontSize="10" FontWeight="Bold"
+                     Foreground="#FF0B1119"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock x:Name="PreviewLabel" Classes="caption" VerticalAlignment="Center" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

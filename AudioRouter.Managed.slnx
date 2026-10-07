@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="AudioRouter.Cli/AudioRouter.Cli.csproj" />
+  <Project Path="AudioRouter.Core/AudioRouter.Core.csproj" />
+  <Project Path="AudioRouter.Desktop/AudioRouter.Desktop.csproj" />
+  <Project Path="AudioRouter.Tests/AudioRouter.Tests.csproj" />
+</Solution>

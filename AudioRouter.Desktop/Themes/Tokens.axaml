@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+  <!-- ============================================================
+       设计 Token（深色主题）
+       与 WPF 版同源：任何视图不得写死颜色 / 圆角 / 字号
+       ============================================================ -->
+
+  <!-- ========== 颜色 ========== -->
+  <Color x:Key="Color.Bg.Window">#F216181D</Color>
+  <Color x:Key="Color.Bg.Surface">#FF1E2026</Color>
+  <Color x:Key="Color.Bg.Surface2">#FF262931</Color>
+  <Color x:Key="Color.Bg.Sunken">#FF121317</Color>
+  <Color x:Key="Color.Bg.Hover">#14FFFFFF</Color>
+  <Color x:Key="Color.Bg.Pressed">#1AFFFFFF</Color>
+  <Color x:Key="Color.Border.Subtle">#14FFFFFF</Color>
+  <Color x:Key="Color.Border.Strong">#24FFFFFF</Color>
+  <Color x:Key="Color.Text.Primary">#FFF2F4F8</Color>
+  <Color x:Key="Color.Text.Secondary">#FFA8AEBB</Color>
+  <Color x:Key="Color.Text.Tertiary">#FF6E7686</Color>
+  <Color x:Key="Color.Text.Disabled">#FF4A4F5A</Color>
+  <Color x:Key="Color.Accent">#FF4C9DFF</Color>
+  <Color x:Key="Color.Accent.Hover">#FF6BB0FF</Color>
+  <Color x:Key="Color.Accent.Weak">#244C9DFF</Color>
+  <Color x:Key="Color.State.Success">#FF3DDC97</Color>
+  <Color x:Key="Color.State.Warning">#FFFFB454</Color>
+  <Color x:Key="Color.State.Danger">#FFFF6B6B</Color>
+  <Color x:Key="Color.State.Muted">#FF8A8F99</Color>
+  <Color x:Key="Color.Danger.Weak">#24FF6B6B</Color>
+
+  <!-- ========== 画刷 ========== -->
+  <SolidColorBrush x:Key="Brush.Bg.Window" Color="{StaticResource Color.Bg.Window}" />
+  <SolidColorBrush x:Key="Brush.Bg.Surface" Color="{StaticResource Color.Bg.Surface}" />
+  <SolidColorBrush x:Key="Brush.Bg.Surface2" Color="{StaticResource Color.Bg.Surface2}" />
+  <SolidColorBrush x:Key="Brush.Bg.Sunken" Color="{StaticResource Color.Bg.Sunken}" />
+  <SolidColorBrush x:Key="Brush.Bg.Hover" Color="{StaticResource Color.Bg.Hover}" />
+  <SolidColorBrush x:Key="Brush.Bg.Pressed" Color="{StaticResource Color.Bg.Pressed}" />
+  <SolidColorBrush x:Key="Brush.Border.Subtle" Color="{StaticResource Color.Border.Subtle}" />
+  <SolidColorBrush x:Key="Brush.Border.Strong" Color="{StaticResource Color.Border.Strong}" />
+  <SolidColorBrush x:Key="Brush.Text.Primary" Color="{StaticResource Color.Text.Primary}" />
+  <SolidColorBrush x:Key="Brush.Text.Secondary" Color="{StaticResource Color.Text.Secondary}" />
+  <SolidColorBrush x:Key="Brush.Text.Tertiary" Color="{StaticResource Color.Text.Tertiary}" />
+  <SolidColorBrush x:Key="Brush.Text.Disabled" Color="{StaticResource Color.Text.Disabled}" />
+  <SolidColorBrush x:Key="Brush.Accent" Color="{StaticResource Color.Accent}" />
+  <SolidColorBrush x:Key="Brush.Accent.Hover" Color="{StaticResource Color.Accent.Hover}" />
+  <SolidColorBrush x:Key="Brush.Accent.Weak" Color="{StaticResource Color.Accent.Weak}" />
+  <SolidColorBrush x:Key="Brush.State.Success" Color="{StaticResource Color.State.Success}" />
+  <SolidColorBrush x:Key="Brush.State.Warning" Color="{StaticResource Color.State.Warning}" />
+  <SolidColorBrush x:Key="Brush.State.Danger" Color="{StaticResource Color.State.Danger}" />
+  <SolidColorBrush x:Key="Brush.State.Muted" Color="{StaticResource Color.State.Muted}" />
+  <SolidColorBrush x:Key="Brush.Danger.Weak" Color="{StaticResource Color.Danger.Weak}" />
+  <SolidColorBrush x:Key="Brush.Transparent" Color="Transparent" />
+
+  <!-- ========== 圆角 ========== -->
+  <CornerRadius x:Key="Radius.Xs">4</CornerRadius>
+  <CornerRadius x:Key="Radius.Sm">6</CornerRadius>
+  <CornerRadius x:Key="Radius.Md">8</CornerRadius>
+  <CornerRadius x:Key="Radius.Lg">12</CornerRadius>
+  <CornerRadius x:Key="Radius.Xl">16</CornerRadius>
+
+  <!-- ========== 字体 ========== -->
+  <FontFamily x:Key="Font.App">Segoe UI Variable Text, Microsoft YaHei UI, Segoe UI, Inter, sans-serif</FontFamily>
+  <FontFamily x:Key="Font.Display">Segoe UI Variable Display, Microsoft YaHei UI, Segoe UI, Inter, sans-serif</FontFamily>
+
+  <sys:Double x:Key="Font.Size.Title">15</sys:Double>
+  <sys:Double x:Key="Font.Size.BodyStrong">13.5</sys:Double>
+  <sys:Double x:Key="Font.Size.Body">13</sys:Double>
+  <sys:Double x:Key="Font.Size.Caption">12</sys:Double>
+  <sys:Double x:Key="Font.Size.Micro">11</sys:Double>
+
+  <!-- ========== 阴影（Avalonia 用 BoxShadows；格式 offsetX offsetY blur spread color） ========== -->
+  <BoxShadows x:Key="Shadow.Card">0 1 3 0 #40000000</BoxShadows>
+  <BoxShadows x:Key="Shadow.Float">0 8 24 0 #8C000000</BoxShadows>
+  <BoxShadows x:Key="Shadow.Drag">0 12 32 0 #99000000</BoxShadows>
+
+  <!-- ========== 动效时长（与 WPF 版同一套语义） ========== -->
+  <sys:TimeSpan x:Key="Motion.Hover">0:0:0.12</sys:TimeSpan>
+  <sys:TimeSpan x:Key="Motion.Enter">0:0:0.16</sys:TimeSpan>
+
+  <!-- ========== 尺寸 ========== -->
+  <sys:Double x:Key="Size.HeaderBar">44</sys:Double>
+  <sys:Double x:Key="Size.StatusBar">28</sys:Double>
+  <sys:Double x:Key="Size.SectionHeader">40</sys:Double>
+  <sys:Double x:Key="Size.AppRow">52</sys:Double>
+  <sys:Double x:Key="Size.Icon">36</sys:Double>
+  <sys:Double x:Key="Size.LeftPanel">380</sys:Double>
+
+</ResourceDictionary>

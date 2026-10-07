@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:AudioRouter.Desktop.Views"
+        x:Class="AudioRouter.Desktop.Views.DuplicateTargetsWindow"
+        Width="460" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource Brush.Bg.Window}">
+
+  <StackPanel Margin="20" Spacing="14">
+
+    <StackPanel Spacing="4">
+      <TextBlock x:Name="TitleText" Classes="section" />
+      <TextBlock x:Name="SubtitleText" Classes="micro" />
+    </StackPanel>
+
+    <Border Classes="sunken" Padding="12" MaxHeight="300">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ItemsControl x:Name="ChoicesControl">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="views:DeviceChoice">
+              <CheckBox IsChecked="{Binding IsSelected}" Margin="0,3">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding Device.FriendlyName}" Classes="bodyStrong" />
+                  <TextBlock Text="{Binding Device.KindText}" Classes="micro" />
+                </StackPanel>
+              </CheckBox>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+
+    <TextBlock x:Name="HintText" Classes="micro" />
+
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+      <Button x:Name="CancelButton" Classes="ghost" Click="OnCancel" />
+      <Button x:Name="ApplyButton" Classes="primary" Click="OnApply" />
+    </StackPanel>
+  </StackPanel>
+</Window>

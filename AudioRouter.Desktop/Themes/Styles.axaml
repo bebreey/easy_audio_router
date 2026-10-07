@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ============================================================
+       控件样式：全部引用 Token，不在样式里写死颜色
+       ============================================================ -->
+
+  <!-- ========== 文本 ========== -->
+  <Style Selector="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Font.App}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+    <Setter Property="FontSize" Value="{StaticResource Font.Size.Body}" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+  </Style>
+
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Display}" />
+    <Setter Property="FontSize" Value="{StaticResource Font.Size.Title}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontSize" Value="{StaticResource Font.Size.BodyStrong}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="TextBlock.bodyStrong">
+    <Setter Property="FontSize" Value="{StaticResource Font.Size.BodyStrong}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontSize" Value="{StaticResource Font.Size.Caption}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Secondary}" />
+  </Style>
+
+  <Style Selector="TextBlock.micro">
+    <Setter Property="FontSize" Value="{StaticResource Font.Size.Micro}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Tertiary}" />
+  </Style>
+
+  <Style Selector="TextBlock.dim">
+    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Secondary}" />
+  </Style>
+
+  <!-- ========== 图标按钮 ========== -->
+  <Style Selector="Button.icon">
+    <Setter Property="Width" Value="34" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Sm}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Secondary}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+
+  <Style Selector="Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Hover}" />
+  </Style>
+
+  <Style Selector="Button.icon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Pressed}" />
+  </Style>
+
+  <!-- 关闭按钮：悬停变红（Windows 惯例） -->
+  <Style Selector="Button.icon.close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#E81123" />
+  </Style>
+
+  <!-- 标题栏按钮：更紧凑 -->
+  <Style Selector="Button.titlebar">
+    <Setter Property="Width" Value="46" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Secondary}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.titlebar:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Hover}" />
+  </Style>
+
+  <Style Selector="Button.titlebar.close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#E81123" />
+  </Style>
+
+  <!-- ========== 主按钮 ========== -->
+  <Style Selector="Button.primary">
+    <Setter Property="Padding" Value="16,7" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Sm}" />
+    <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
+    <Setter Property="Foreground" Value="#FF0B1119" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Brush.Accent.Hover}" />
+  </Style>
+
+  <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Surface2}" />
+    <Setter Property="TextBlock.Foreground" Value="{StaticResource Brush.Text.Disabled}" />
+  </Style>
+
+  <!-- ========== 幽灵按钮 ========== -->
+  <Style Selector="Button.ghost">
+    <Setter Property="Padding" Value="12,6" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Sm}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Secondary}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+
+  <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Hover}" />
+  </Style>
+
+  <!-- ========== 搜索框 ========== -->
+  <Style Selector="TextBox.search">
+    <Setter Property="Height" Value="34" />
+    <Setter Property="Padding" Value="34,0,10,0" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Sm}" />
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Sunken}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+    <Setter Property="CaretBrush" Value="{StaticResource Brush.Accent}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FontSize" Value="{StaticResource Font.Size.Body}" />
+  </Style>
+
+  <Style Selector="TextBox.search /template/ TextBlock#PART_Watermark">
+    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Tertiary}" />
+  </Style>
+
+  <!-- ========== 卡片 / 徽章 ========== -->
+  <Style Selector="Border.row">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Md}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{StaticResource Motion.Hover}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="Border.row:pointerover">
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Hover}" />
+  </Style>
+
+  <!-- 卡片：落点高亮同样走 120ms，避免"突现"的割裂感 -->
+  <Style Selector="Border.card">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{StaticResource Motion.Hover}" />
+        <BrushTransition Property="BorderBrush" Duration="{StaticResource Motion.Hover}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Surface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Brush.Border.Subtle}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Lg}" />
+    <Setter Property="Padding" Value="14,12" />
+    <Setter Property="BoxShadow" Value="{StaticResource Shadow.Card}" />
+  </Style>
+
+  <Style Selector="Border.sunken">
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Sunken}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Md}" />
+  </Style>
+
+  <Style Selector="Border.badge">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Xs}" />
+    <Setter Property="Padding" Value="6,2" />
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Surface2}" />
+  </Style>
+
+  <Style Selector="Border.badgeAccent">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Xs}" />
+    <Setter Property="Padding" Value="6,2" />
+    <Setter Property="Background" Value="{StaticResource Brush.Accent.Weak}" />
+  </Style>
+
+  <Style Selector="Border.badgeWarning">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Xs}" />
+    <Setter Property="Padding" Value="6,2" />
+    <Setter Property="Background" Value="#24FFB454" />
+  </Style>
+
+  <!-- ========== 拖拽反馈 ========== -->
+  <Style Selector="Border.dragSource">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+
+  <Style Selector="Border.card.dropTarget">
+    <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+    <Setter Property="Background" Value="#0F4C9DFF" />
+  </Style>
+
+  <!-- Toast 入场：160ms 淡入（对应设计 Token 的 Motion.Enter） -->
+  <Style Selector="Border.toast">
+    <Style.Animations>
+      <Animation Duration="{StaticResource Motion.Enter}" IterationCount="1">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector="Border.card.dropRejected">
+    <Setter Property="BorderBrush" Value="{StaticResource Brush.State.Danger}" />
+    <Setter Property="Background" Value="#0FFF6B6B" />
+  </Style>
+
+  <Style Selector="Border.sunken.dropActive">
+    <Setter Property="Background" Value="#1F4C9DFF" />
+    <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+  </Style>
+
+  <!-- ========== 列表项（应用行） ========== -->
+  <Style Selector="ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,0,2" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Md}" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Brush.Bg.Hover}" />
+  </Style>
+
+  <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Brush.Accent.Weak}" />
+  </Style>
+
+  <!-- 滚动条：深色、细、悬停变亮（Fluent 默认的轨道底色在深色主题下偏亮） -->
+  <Style Selector="ScrollBar:vertical">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <Style Selector="ScrollBar:horizontal">
+    <Setter Property="Height" Value="10" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <Style Selector="ScrollBar /template/ Thumb">
+    <Setter Property="Background" Value="{StaticResource Brush.Border.Strong}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{StaticResource Motion.Hover}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <!--
+    Fluent 的滚动条模板把**滑块的可见宽度写在模板内部的 Border 上**，
+    从 ScrollBar/Thumb 外层设 Width 量不出来（实测：设 10，实际仍是 16 逻辑宽）。
+    所以这里直接改内层 Border，保留 Fluent 的轨道/拖拽逻辑不动。
+  -->
+  <Style Selector="ScrollBar:vertical /template/ Thumb /template/ Border">
+    <Setter Property="Width" Value="8" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+
+  <Style Selector="ScrollBar:horizontal /template/ Thumb /template/ Border">
+    <Setter Property="Height" Value="8" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+
+  <Style Selector="ScrollBar /template/ Thumb:pointerover">
+    <Setter Property="Background" Value="{StaticResource Brush.Text.Tertiary}" />
+  </Style>
+
+  <Style Selector="ScrollBar /template/ Thumb:pressed">
+    <Setter Property="Background" Value="{StaticResource Brush.Text.Secondary}" />
+  </Style>
+
+  <Style Selector="ScrollBar /template/ Grid#PART_ScrollBars">
+    <Setter Property="Margin" Value="0" />
+  </Style>
+
+</Styles>

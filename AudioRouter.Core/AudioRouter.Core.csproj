@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- 刻意target net10.0（不带 -windows）：核心库必须与 UI 框架、与操作系统解耦 -->
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AudioRouter.Core</RootNamespace>
+    <AssemblyName>AudioRouter.Core</AssemblyName>
+    <!-- 零 NuGet 依赖 -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- 语言包（内置只读副本）；各前端另行链接同一份到自己的输出 -->
+  <ItemGroup>
+    <None Update="Languages\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

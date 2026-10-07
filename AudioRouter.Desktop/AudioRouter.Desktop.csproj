@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!--
+      命名空间刻意用 AudioRouter.Desktop，**不能**用 AudioRouter.Avalonia：
+      后者会与依赖的根命名空间 Avalonia 冲突 —— 类内部写 Avalonia.Input.X 时
+      编译器会解析成 AudioRouter.Avalonia.Input.X（不存在），扩展方法也随之不可见。
+      程序集名与命名空间一致（此前是"程序集叫 Avalonia、命名空间叫 Desktop"的错位）。
+    -->
+    <RootNamespace>AudioRouter.Desktop</RootNamespace>
+    <AssemblyName>AudioRouter.Desktop</AssemblyName>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- exe 内嵌图标（资源管理器/任务栏）；由图标生成器产出，与窗口图标同源 -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <!--
+      编译期绑定校验：XAML 绑定路径写错会**编译失败**，而不是像 WPF 那样静默显示空白。
+      这正是 WPF 迁移时最需要的能力，所以默认开启。
+    -->
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AudioRouter.Core\AudioRouter.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    语言文件与 GUI / CLI 共用同一份（单一来源，不复制内容）。
+    缺了这一项，内置语言目录就不存在 —— 界面会大量显示键名而不是文案。
+  -->
+  <ItemGroup>
+    <None Include="..\AudioRouter.Core\Languages\*.json"
+          Link="Languages\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- 窗口图标用的 PNG（与 exe 内嵌的 .ico 同一份设计） -->
+  <ItemGroup>
+    <None Update="Assets\app.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
