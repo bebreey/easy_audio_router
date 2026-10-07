@@ -39,6 +39,13 @@ public interface IRoutingService
     RoutingOutcome Unroute(string key, string deviceId);
 
     /// <summary>
+    /// 把一条路由从一台设备挪到另一台（拖动已有路由标签就是本操作）。
+    /// 与 <see cref="Unroute"/> 的关键差别：**不下发卸载** —— 卸载是整条撤销，
+    /// 会把刚要为这次移动建立的设备列表一起撤掉。
+    /// </summary>
+    RoutingOutcome Move(string key, string fromDeviceId, string toDeviceId, string toDeviceName);
+
+    /// <summary>
     /// 当前下发通道的**简短**状态（走语言文件，可直接显示）。
     /// 平台细节（为什么不能改道）用 <see cref="Detail"/>，留给 Tooltip / doctor。
     /// </summary>
@@ -133,6 +140,63 @@ public sealed class RoutingService : IRoutingService
         return failed == 0 ? RoutingOutcome.Applied : RoutingOutcome.Failed;
     }
 
+    /// <summary>
+    /// 移动路由：只改记录，然后按"第一条替换式、其余追加式"把整套重新下发。
+    ///
+    /// 为什么不能复用 <see cref="Unroute"/>：卸载（flag=0）会撤掉该进程里的**全部**补丁，
+    /// 于是刚建立的新设备列表会被一起撤销 —— 移动完等于什么都没做。
+    /// </summary>
+    public RoutingOutcome Move(string key, string fromDeviceId, string toDeviceId, string toDeviceName)
+    {
+        var source = _store.Find(key).FirstOrDefault(r =>
+            string.Equals(r.DeviceId, fromDeviceId, StringComparison.OrdinalIgnoreCase));
+
+        if (source is null) return RoutingOutcome.NotFound;
+        if (string.Equals(fromDeviceId, toDeviceId, StringComparison.OrdinalIgnoreCase)) return RoutingOutcome.AlreadyRouted;
+
+        // 记录层面：目标设备上还没有就先加一条（保留用户原来的 Mode 意图），再删掉旧的
+        if (!_store.Exists(key, toDeviceId))
+        {
+            _store.Add(new RouteRecord
+            {
+                Key = source.Key,
+                ExePath = source.ExePath,
+                ProcessName = source.ProcessName,
+                DisplayName = source.DisplayName,
+                DeviceId = toDeviceId,
+                DeviceName = toDeviceName,
+                Mode = source.Mode,
+                LastPid = source.LastPid,
+                CreatedAt = source.CreatedAt,
+            });
+        }
+
+        _store.Remove(key, fromDeviceId);
+
+        // 下发层面：整套重发（第一条替换式确立列表，其余追加），与拖拽添加的顺序一致
+        var livePids = _backend.EnumerateSessions()
+            .Where(s => RouteKey.For(s.ExePath, s.ProcessName) == key)
+            .Select(s => s.Pid)
+            .Distinct()
+            .ToList();
+
+        var applied = 0;
+        foreach (var livePid in livePids)
+        {
+            var index = 0;
+            foreach (var record in _store.Find(key))
+            {
+                var mode = index++ == 0 ? RouteMode.Route : RouteMode.Duplicate;
+                if (_backend.ApplyRoute(livePid, record.DeviceId, mode) == RoutingOutcome.Applied) applied++;
+            }
+        }
+
+        StartupLog.Write(
+            $"move: key='{key}' from='{fromDeviceId}' to='{toDeviceId}' livePids=[{string.Join(",", livePids)}] applied={applied}");
+
+        if (livePids.Count == 0) return RoutingOutcome.Applied;   // 目标没在跑：记录已改，下次出现时自动套用
+        return applied > 0 ? RoutingOutcome.Applied : RoutingOutcome.Failed;
+    }
     public string Describe() => _backend.SupportsRouting
         ? Localization.Loc.F("status.routing.active", _backend.Name)
         : Localization.Loc.T("status.routing.recordedOnly");

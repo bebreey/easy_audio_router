@@ -58,6 +58,7 @@ internal static class Program
         TestRouteStoreDurability();
         TestNativeRoutingBlob();
         TestUnrouteReappliesRemaining();
+        TestMoveRouteDoesNotUnload();
         TestRouteKey();
         TestRouteReconciler();
         TestDeviceRouteNotifications();
@@ -180,6 +181,43 @@ internal static class Program
         Check("blob: duplicate mode maps to flag 2", NativeRoutingBlob.BuildFlag(true) == 2);
     }
 
+    /// <summary>
+    /// 移动路由：记录改到新设备，并**不下发卸载** —— 卸载会整条撤销，把刚建立的列表也撤掉。
+    /// </summary>
+    private static void TestMoveRouteDoesNotUnload()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"audio-router-move-{Guid.NewGuid():N}.json");
+
+        try
+        {
+            var store = new RouteStore(path);
+            var backend = new RecordingRouteBackend();
+            var service = new RoutingService(store, backend);
+
+            const string exe = @"C:\Apps\Music.exe";
+            var key = RouteKey.For(exe, "Music");
+
+            service.Route(new RouteRecord { ExePath = exe, ProcessName = "Music", DeviceId = "sink-a", LastPid = 4242 });
+
+            backend.Applied.Clear();
+            backend.Removed.Clear();
+
+            var outcome = service.Move(key, "sink-a", "sink-b", "Device B");
+
+            Check("move: reports applied", outcome == RoutingOutcome.Applied, outcome.ToString());
+            Check("move: does NOT unload (an unload would clear the new list too)",
+                backend.Removed.Count == 0, string.Join(",", backend.Removed));
+            Check("move: re-dispatched to the new device",
+                backend.Applied.Any(a => a.EndsWith("sink-b")), string.Join(",", backend.Applied));
+            Check("move: old device dropped from the store", store.Find(key).All(r => r.DeviceId != "sink-a"));
+            Check("move: new device recorded with its name",
+                store.Find(key).Any(r => r.DeviceId == "sink-b" && r.DeviceName == "Device B"));
+        }
+        finally
+        {
+            try { if (File.Exists(path)) File.Delete(path); } catch { /* 忽略 */ }
+        }
+    }
     /// <summary>
     /// 卸载是整条撤销（flag=0 撤掉该进程所有补丁），所以移除一条路由后必须把**剩下的**重新下发，
     /// 否则它们会静默失效直到应用重启。这条断言钉住那个行为 —— 它不是推测，
