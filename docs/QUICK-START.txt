@@ -31,4 +31,5 @@ Audio Router — 先看这里 / Quick start
   audio-router --help      全部命令 / all commands
 
 许可 / License
-  GPL-3.0 · 派生自 audiorouterdev/audio-router · 见 LICENSE.md / NOTICE.md
+  GPL-3.0 · 派生自 audiorouterdev/audio-router · 见 LICENSE.md / NOTICE.md  · 关闭本程序时，音频会自动还原到改道之前（已保存的路由不受影响，下次启动照旧套用）
+  · Closing this program restores the audio to where it was (your saved routes are kept)

@@ -5,6 +5,55 @@
 
 ---
 
+## [0.12.3] — 2026-10-07
+
+### Added / 新增
+
+- **Closing the program now restores the audio.** The patches live inside the target processes, so
+  closing Audio Router used to leave every routed program redirected. On exit the program now
+  unloads everything it dispatched in that run, putting the audio back where it was.
+  **Saved routes are kept** and re-applied on the next start - they are your configuration, not state.
+  **关闭程序现在会还原音频。** 补丁长在目标进程里，以前关掉 Audio Router 后那些程序仍被改道；
+  现在退出时会撤销本次运行下发过的全部路由，音频回到改道之前。**已保存的路由保留**，下次启动照旧套用。
+
+### Fixed / 修复
+
+This release also contains all six 0.12.2 fixes - they are listed in full in the 0.12.2 section below.
+本版同时包含 0.12.2 的六项修复（详见下方 0.12.2 一节）。
+
+### Downloads / 下载
+
+| File / 文件 | Platform / 平台 |
+| --- | --- |
+| \AudioRouter-0.12.3-win-x64.zip\ | Windows 10/11 **x64** — GUI + CLI **+ native core**（解压即用 / unzip and run） |
+| \AudioRouter-0.12.3-win-arm64.zip\ | Windows on ARM64 — GUI + CLI；**no native core**（上游无 ARM64 工具） |
+| \AudioRouter-0.12.3-linux-x64.zip\ | Linux x64 (glibc) — GUI + CLI |
+| \AudioRouter-0.12.3-linux-arm64.zip\ | Linux ARM64 (glibc) — same as above / 同上 |
+| \AudioRouter-0.12.3-linux-musl-x64.zip\ | Linux x64 musl (Alpine) — same as above / 同上 |
+
+\\\
+3068b7fdcd08b4bf0e5ebbe9fd00bddfbb9fe2c6c741e3aef52e6a9d0d4c890e  AudioRouter-0.12.3-linux-arm64.zip
+66dfb1a383e1e843ceba43c05f5925defaae82dd5d833dea3751bc9d9a42f318  AudioRouter-0.12.3-linux-musl-x64.zip
+ff96c4f01365cad4c292e591d12466b0602078ed1439172511cfe844661ce7e6  AudioRouter-0.12.3-linux-x64.zip
+daf427697c5f9ef97eb32cc23e9564d989d11781d5c0fd6526f1cc144cb7dee6  AudioRouter-0.12.3-win-arm64.zip
+b56a086b7b43ad893543608d1a5375023990b772f8b263e959c28d024cd1075a  AudioRouter-0.12.3-win-x64.zip
+\\\
+
+### How this was verified / 本版如何验证
+
+| Item / 项 | Status / 状态 |
+| --- | --- |
+| Closing restores the audio / 关闭即还原 | The unload is dispatched (\estore: unloaded=1\) **and the user confirmed by ear** that the audio returned to the default device. 卸载指令确实下发（unloaded=1），并由用户**实际听感确认**声音回到了默认设备。 |
+| The injected DLL may still be listed / 目标进程里可能仍看得到那个 DLL | That is normal: the core reverts its patches without freeing the library. What matters is the audio, which the ear test covers. 属正常：核心只还原补丁、不自我卸载；判据是声音，已由听感验证。 |
+| The packaged build / 打包后的程序 | Extracted into a folder: version 0.12.3.0, \doctor\ reports *Can redirect audio: yes*, and a routed program stays in the list exactly once. 解压后版本正确、doctor 报可改道、被路由的程序仍只出现一行。 |
+| **NOT verified / 未验证** | The Linux backend is still code-complete but has never run against a real PipeWire/PulseAudio server. Linux 后端仍未经真机验证。 |
+
+### Note on 0.12.2 / 关于 0.12.2
+
+0.12.2's release files have been superseded by this version - use 0.12.3, which contains everything
+0.12.2 had plus the restore feature. 0.12.2 的资源已被本版取代：请使用 0.12.3。
+
+---
 ## [0.12.2] — 2026-10-07
 
 ### Fixed / 修复
