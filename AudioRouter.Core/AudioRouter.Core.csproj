@@ -14,7 +14,7 @@
 
   <!-- 语言包（内置只读副本）；各前端另行链接同一份到自己的输出 -->
   <ItemGroup>
-    <None Update="Languages\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Languages\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

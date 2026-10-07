@@ -20,7 +20,7 @@
   <ItemGroup>
     <None Include="..\AudioRouter.Core\Languages\*.json"
           Link="Languages\%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest" />
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

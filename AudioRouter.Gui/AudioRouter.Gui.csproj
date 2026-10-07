@@ -19,7 +19,7 @@
 
   <!-- 语言包随程序发布到输出目录的 Languages/，用户可直接编辑或替换 -->
   <ItemGroup>
-    <None Include="..\AudioRouter.Core\Languages\*.json" Link="Languages\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\AudioRouter.Core\Languages\*.json" Link="Languages\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- GUI 只保留表现层；音频、路由、语言、设置全部来自跨平台核心库 -->

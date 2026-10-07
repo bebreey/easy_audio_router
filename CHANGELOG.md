@@ -62,8 +62,8 @@ Windows today, use the [upstream 0.10.2 release](https://github.com/audiorouterd
 | `AudioRouter-0.11.0-linux-x64.zip` | Linux x64 — same two programs. Self-contained. |
 
 ```
-a7d270309441fcc25f7599746b20f7be7b2bb29164344be3992d42c4639b7bb5  AudioRouter-0.11.0-linux-x64.zip
-7fce32c89a3b519c76ac8a3b5c87c726e9f92b30d5a42ae6e61d70666e76cdff  AudioRouter-0.11.0-win-x64.zip
+e5bd29bd14f37a1cb0d3f8bc073064d4454bb73bd8a9b2d5cf0ad720635ad5e4  AudioRouter-0.11.0-linux-x64.zip
+a6523e87f97b691261161af5db35b51bd711d8a9914c8a1651935d9cbbb9ba40  AudioRouter-0.11.0-win-x64.zip
 ```
 
 Quick smoke test after unzip:

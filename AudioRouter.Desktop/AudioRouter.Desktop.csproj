@@ -43,12 +43,12 @@
   <ItemGroup>
     <None Include="..\AudioRouter.Core\Languages\*.json"
           Link="Languages\%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest" />
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- 窗口图标用的 PNG（与 exe 内嵌的 .ico 同一份设计） -->
   <ItemGroup>
-    <None Update="Assets\app.png" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Assets\app.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
