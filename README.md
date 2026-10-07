@@ -33,6 +33,26 @@ already playing, **restart it** — that is when the routing takes effect.
 The zip also contains `先看这里-怎么用.txt` with these steps and the usual traps
 (including how to get past the SmartScreen prompt on a downloaded zip).
 
+## Sending one program's audio to another program
+
+Routing to a different **speaker** works on its own. The reason most people want this, though, is
+different: you want *another program* (a voice chat, a streaming or recording tool) to receive that
+audio as if it were a microphone. That needs a **virtual audio cable**.
+
+A virtual cable is one device that Windows shows twice — as a playback device and as a recording device:
+
+1. Install one, for example [VB-CABLE](https://vb-audio.com/Cable/) (free) or the cable bundled with
+   VoiceMeeter. You will then see **`CABLE Input`** (playback) and **`CABLE Output`** (recording).
+2. In Audio Router, route the program that plays the audio → **`CABLE Input`**.
+3. In the other program (Discord, OBS, a game…), set its **microphone / input** to **`CABLE Output`**.
+4. If that program was already playing audio, restart it — see the note in *Use it* above.
+
+Now the other program hears the music, and nobody else does.
+
+**Want to hear it yourself as well?** Route the program to `CABLE Input` and then **duplicate** it to
+your speakers: in the app, drag it onto the speakers while holding nothing — the second route is a
+duplicate, so it plays on both. (Command line: `audio-router route <pid> <cableId>` followed by
+`audio-router route <pid> <speakerId> --duplicate`.)
 ## What works
 
 | | Windows x64 | Linux | macOS |
