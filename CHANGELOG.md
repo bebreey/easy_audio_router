@@ -5,6 +5,42 @@
 
 ---
 
+## [0.12.1] — 2026-10-07
+
+### Packaging: unzip and run / 打包：解压即用
+
+- **每个 zip 只解出一层文件夹**（`AudioRouter-0.12.1-win-x64/…`）—— 不会再往下载目录里倒 233 个文件。
+- **每个包内都有 `先看这里-怎么用.txt`**：三步上手 + 最常踩的四个坑，包括
+  「已在播放的应用要重启才生效」和 SmartScreen 提示怎么过。
+- Windows x64 包继续**自带原生核心**（`native\`），解压即用，不需要再拷贝任何文件。
+- ARM64 包不含原生核心（上游只提供 x86/x64 工具），包内文件与发布说明里都写明了这一点。
+
+> 为什么另出 0.12.1 而不是改 0.12.0：包的内容变了。标签、源码、校验和必须互相对应，
+> 否则会出现"标签指向的源码里写的校验和与实际附件对不上"。0.12.0 的资源已被本版取代。
+
+### Downloads / 下载
+
+| File | Platform |
+| --- | --- |
+| `AudioRouter-0.12.1-win-x64.zip` | Windows 10/11 **x64** — 图形界面 + 命令行 **+ 原生核心**（解压即用） |
+| `AudioRouter-0.12.1-win-arm64.zip` | Windows on ARM64 — 图形界面 + 命令行；不含原生核心（上游无 ARM64 工具，无法改道） |
+| `AudioRouter-0.12.1-linux-x64.zip` | Linux x64 (glibc) — 图形界面 + 命令行（路由走音频服务器，不需要原生核心） |
+| `AudioRouter-0.12.1-linux-arm64.zip` | Linux ARM64 (glibc) — 同上 |
+| `AudioRouter-0.12.1-linux-musl-x64.zip` | Linux x64 musl (Alpine) — 同上 |
+
+```
+3085d0d50449b83c90dc4375d546e8e19c5051125708384a45a3638a7cb694e6  AudioRouter-0.12.1-linux-arm64.zip
+08127118587d30caa3c6925f7b27b2b3790e17a1e377757737f979292e331c1e  AudioRouter-0.12.1-linux-musl-x64.zip
+7f63ec98fb08319c7e7a5ab50167afbaaa7619af051b60d122bc247b06a029c1  AudioRouter-0.12.1-linux-x64.zip
+f1ee80ef9c4c615851d928261670351b6880db5501719cf0d601ba22dcad5bca  AudioRouter-0.12.1-win-arm64.zip
+a42d274cd4c354b1038cb11b84d601ecb75a7526ff73585841988a9ff6bfe404  AudioRouter-0.12.1-win-x64.zip
+```
+
+**Verified after packaging** / **打包后复验**：把 zip 解压到空目录（只得到一个文件夹）→ 用包里的 CLI 实跑：
+`doctor` 报 *Can redirect audio: yes*，并对一个**尚未打开音频流**的进程真的完成了改道
+（会话从默认设备移到指定设备）。
+
+---
 ## [0.12.0] — 2026-10-07
 
 ### Windows audio redirection actually works now / Windows 上真的能改道了
