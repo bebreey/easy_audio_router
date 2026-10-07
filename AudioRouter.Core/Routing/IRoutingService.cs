@@ -208,7 +208,7 @@ public sealed class RoutingService : IRoutingService
         // 只有 Windows 的原生核心需要"卸载"；其他平台的改道随进程生命周期自然结束
         if (!OperatingSystem.IsWindows()) return 0;
 
-        var unloaded = AudioRouter.Core.Backends.Windows.AudioRouter.Core.Backends.Windows.NativeInjector.UnloadAll(AudioRouter.Core.Backends.Windows.NativeCoreProbe.Directory);
+        var unloaded = AudioRouter.Core.Backends.Windows.NativeInjector.UnloadAll(AudioRouter.Core.Backends.NativeCoreProbe.Directory);
 
         StartupLog.Write($"restore: unloaded={unloaded} (saved routes kept; re-applied on next start)");
 
