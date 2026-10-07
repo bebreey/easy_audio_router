@@ -56,7 +56,14 @@ internal static class NativeInjector
     /// 默认设备会丢。这个状态天然是**进程本地**的 —— 它描述的是"原生核心当前在那边是什么状态"，
     /// 进程重启后核心的补丁也随之消失，所以用静态表就是对的。
     /// </summary>
-    private static readonly HashSet<int> _dispatched = new();
+    private static readonly HashSet<string> _dispatched = new(StringComparer.Ordinal);
+
+    private static string DispatchKey(int pid, string? endpointId) => $"{pid}|{endpointId ?? string.Empty}";
+    private static bool WasDispatched(int pid) => _dispatched.Any(e => e.StartsWith(pid + "|", StringComparison.Ordinal));
+    private static bool HasEntry(int pid, string? endpointId) => _dispatched.Contains(DispatchKey(pid, endpointId));
+    private static void ForgetPid(int pid) => _dispatched.RemoveWhere(e => e.StartsWith(pid + "|", StringComparison.Ordinal));
+
+
 
     /// <summary>按目标进程位数选注入器与 DLL：x86 → do.exe + audio-router.dll；x64 → do64.exe + audio-router64.dll。</summary>
     private static (string DoExe, string Dll) ToolsFor(bool x86)
@@ -152,7 +159,7 @@ internal static class NativeInjector
         // duplicate 的语义（从上游 C++ 反推 + 真机验证）：flag=1 是**替换**整个设备列表，
         // flag=2 是**追加**。所以对某个进程的第一次下发即使是"复制"，也必须先建立基准，
         // 否则列表里只剩新设备、默认设备会丢（实测表现为会话从默认设备消失）。
-        if (duplicate && !unloading && !string.IsNullOrEmpty(baseDeviceId) && !_dispatched.Contains(pid))
+        if (duplicate && !unloading && !string.IsNullOrEmpty(baseDeviceId) && !WasDispatched(pid))
         {
             var baseline = NativeRoutingBlob.Build(
                 (uint)pid,
@@ -172,6 +179,11 @@ internal static class NativeInjector
             ? 0u
             : NativeRoutingBlob.MakeSessionGuidAndFlag(NativeRoutingBlob.NextSessionGuid(), flag);
 
+        if (!unloading && duplicate && HasEntry(pid, endpointId))
+        {
+            return new NativeInjectionResult(true, "already applied (skipped)");
+        }
+
         var blob = NativeRoutingBlob.Build((uint)pid, endpointId, sessionGuidAndFlag);
         var result = SendBlob(nativeDirectory, pid, blob, x86.Value);
 
@@ -182,12 +194,17 @@ internal static class NativeInjector
                 // 卸载（flag=0）会撤掉该进程里的**全部**补丁，设备列表随之清空。
                 // 所以要把它从"已下发"里忘掉：否则之后重新下发复制路由时，
                 // 注入器会以为基准已建立，结果列表里只剩新设备、默认设备丢掉。
-                _dispatched.Remove(pid);
-            }
-            else
-            {
-                _dispatched.Add(pid);
-            }
+                ForgetPid(pid);
+                }
+                else if (duplicate)
+                {
+                _dispatched.Add(DispatchKey(pid, endpointId));
+                }
+                else
+                {
+                ForgetPid(pid);
+                _dispatched.Add(DispatchKey(pid, endpointId));
+                }
         }
 
         return result;

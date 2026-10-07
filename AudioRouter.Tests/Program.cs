@@ -105,13 +105,21 @@ internal static class Program
         NativeCoreProbe.OverrideForTests(nativeDirectory, hasX86: true, hasX64: true);
 
         var result = NativeRouterApply(nativeDirectory, pid, deviceId, duplicate, baseDeviceId);
+        // 在【同一进程】里再下发一次完全相同的请求：
+        // 去重标记是进程内的，跨进程验证不出效果（真实场景里的重复注入正发生在同一进程）。
+        if (args.Length > 6 && args[6] == "twice")
+        {
+            Console.WriteLine("--- second identical call, same process ---");
+            var again = NativeRouterApply(nativeDirectory, pid, deviceId, duplicate, baseDeviceId);
+            Console.WriteLine(again.Ok ? $"INJECT OK ({again.Message})" : "INJECT FAIL: " + again.Message);
+        }
 
         Console.WriteLine("toolchain : " + nativeDirectory);
         Console.WriteLine("pid       : " + pid);
         Console.WriteLine("device    : " + (deviceId ?? "(unload)"));
         Console.WriteLine("duplicate : " + duplicate);
         Console.WriteLine("baseDevice: " + (baseDeviceId ?? "(none)"));
-        Console.WriteLine(result.Ok ? "INJECT OK" : "INJECT FAIL: " + result.Message);
+        Console.WriteLine(result.Ok ? $"INJECT OK ({result.Message})" : "INJECT FAIL: " + result.Message);
 
         return result.Ok ? 0 : 1;
     }
