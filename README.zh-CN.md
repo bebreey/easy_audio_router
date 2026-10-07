@@ -5,7 +5,7 @@
 把某个程序的音频**单独送到指定输出设备** —— 基于
 [audiorouterdev/audio-router](https://github.com/audiorouterdev/audio-router) 的现代化改造版。
 
-![Audio Router](docs/desktop.png)
+![Audio Router](docs/desktop-zh.png)
 
 ## 为什么做这个
 
@@ -46,6 +46,29 @@
 - 要路由**以管理员身份运行**的程序，本程序也要用管理员身份运行。
 - 不编造数据 —— 拿不到就如实说。
 
+## 语言
+
+界面内置 **English** 与 **简体中文**。随时点右上角的 🌐 按钮切换 —— 同一个菜单里还有**打开语言文件夹**。
+
+语言包就是普通 JSON。丢一个到那个文件夹里，它就会出现在语言列表里，不需要重新编译：
+
+```json
+{
+  "code": "ja-JP",
+  "name": "日本語",
+  "version": 1,
+  "author": "你的名字",
+  "strings": {
+    "section.apps": "アプリケーション",
+    "device.kind.virtual": "仮想ケーブル"
+  }
+}
+```
+
+最省事的做法：把 [`AudioRouter.Core/Languages/en-US.json`](AudioRouter.Core/Languages/en-US.json)
+复制一份，把值翻译掉 —— 那个文件里有全部键名（必填字段只有 `code`、`name`、`version`、`author`、`strings`）。
+
+命令行也可以：`audio-router lang list` · `audio-router lang set ja-JP` · `audio-router lang import <文件>`。
 ## 命令行（可选）
 
 ```text
