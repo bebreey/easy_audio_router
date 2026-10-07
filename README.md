@@ -33,6 +33,8 @@ already playing, **restart it** — that is when the routing takes effect.
 The zip also contains `readme.txt` with these steps and the usual traps
 (including how to get past the SmartScreen prompt on a downloaded zip).
 
+Closing the program puts the audio back where it was; your saved routes are kept and re-applied next time.
+
 ## Using it as a microphone (the usual goal)
 
 Routing to another **speaker** needs nothing extra. What most people actually want, though, is to let
