@@ -7,6 +7,12 @@ Route one program's audio to a different output device — a modernized fork of
 
 ![Audio Router](docs/desktop-en.png)
 
+> ⚠️ **Never route a game that runs anti-cheat** (CS2/VAC, and most competitive online games).
+> This program works by injecting a DLL into whatever you route. Doing that to such a game can get your
+> account **permanently banned - unappealable, unrecoverable**, and no one can promise you otherwise.
+> Route the music player instead; leave the game alone and its process is never touched.
+> Details: [Do not route a game that runs anti-cheat](#do-not-route-a-game-that-runs-anti-cheat).
+
 ## Why I made this
 
 It started with a game night. I was playing music for my friends in-game to keep the mood going, and I
