@@ -57,6 +57,7 @@ internal static class Program
         TestRouteStorePersistence();
         TestRouteStoreDurability();
         TestNativeRoutingBlob();
+        TestUnrouteReappliesRemaining();
         TestRouteKey();
         TestRouteReconciler();
         TestDeviceRouteNotifications();
@@ -179,6 +180,83 @@ internal static class Program
         Check("blob: duplicate mode maps to flag 2", NativeRoutingBlob.BuildFlag(true) == 2);
     }
 
+    /// <summary>
+    /// 卸载是整条撤销（flag=0 撤掉该进程所有补丁），所以移除一条路由后必须把**剩下的**重新下发，
+    /// 否则它们会静默失效直到应用重启。这条断言钉住那个行为 —— 它不是推测，
+    /// 对应真机日志里的 `unroute: ... reapplied=1`。
+    /// </summary>
+    private static void TestUnrouteReappliesRemaining()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"audio-router-reapply-{Guid.NewGuid():N}.json");
+
+        try
+        {
+            var store = new RouteStore(path);
+            var backend = new RecordingRouteBackend();
+            var service = new RoutingService(store, backend);
+
+            const string exe = @"C:\Apps\Music.exe";
+            var key = RouteKey.For(exe, "Music");
+
+            service.Route(new RouteRecord { ExePath = exe, ProcessName = "Music", DeviceId = "sink-a", LastPid = 4242 });
+            service.Route(new RouteRecord
+            {
+                ExePath = exe, ProcessName = "Music", DeviceId = "sink-b",
+                Mode = RouteMode.Duplicate, LastPid = 4242,
+            });
+
+            backend.Applied.Clear();
+            backend.Removed.Clear();
+
+            var outcome = service.Unroute(key, "sink-a");
+
+            Check("reapply: unroute reports applied", outcome == RoutingOutcome.Applied, outcome.ToString());
+            Check("reapply: unloaded the live instance", backend.Removed.Contains(4242), string.Join(",", backend.Removed));
+            Check("reapply: remaining route was re-dispatched", backend.Applied.Count == 1, backend.Applied.Count.ToString());
+            Check("reapply: and it is the other device",
+                backend.Applied.Count == 1 && backend.Applied[0].EndsWith("sink-b"), string.Join(",", backend.Applied));
+            Check("reapply: the removed one is gone from the store", store.Find(key).Count == 1);
+        }
+        finally
+        {
+            try { if (File.Exists(path)) File.Delete(path); } catch { /* 忽略 */ }
+        }
+    }
+
+    /// <summary>记录 ApplyRoute / RemoveRoute 调用的后端替身（供上面那条断言使用）。</summary>
+    private sealed class RecordingRouteBackend : IAudioBackend
+    {
+        public List<string> Applied { get; } = new();
+        public List<int> Removed { get; } = new();
+
+        public string Name => "recording";
+        public bool IsAvailable => true;
+        public string? Limitation => null;
+        public bool SupportsRouting => true;
+        public bool SupportsDuplication => true;
+
+        public IReadOnlyList<AudioDevice> EnumerateDevices() => Array.Empty<AudioDevice>();
+
+        /// <summary>让服务层能按 exe 路径找到"活着的实例"。</summary>
+        public IReadOnlyList<AppSession> EnumerateSessions() => new[]
+        {
+            new AppSession { Pid = 4242, ExePath = @"C:\Apps\Music.exe", ProcessName = "Music" },
+        };
+
+        public bool SetProcessMute(int pid, bool muted) => false;
+
+        public RoutingOutcome ApplyRoute(int pid, string deviceId, RouteMode mode)
+        {
+            Applied.Add($"{pid}:{deviceId}");
+            return RoutingOutcome.Applied;
+        }
+
+        public RoutingOutcome RemoveRoute(int pid, string deviceId)
+        {
+            Removed.Add(pid);
+            return RoutingOutcome.Applied;
+        }
+    }
     private static void TestSinkParsing()
     {
         var sinks = PactlParser.ParseSinks(SampleData.Sinks, "alsa_output.pci-0000_00_1f.3.analog-stereo");
