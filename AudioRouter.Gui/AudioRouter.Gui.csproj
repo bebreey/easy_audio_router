@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>AudioRouter.Gui</AssemblyName>
+    <RootNamespace>AudioRouter.Gui</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 与 Avalonia 版共用同一份图标，避免两个前端图标不一致 -->
+    <ApplicationIcon>..\AudioRouter.Desktop\Assets\app.ico</ApplicationIcon>
+    <!-- 零 NuGet 依赖：保证离线可还原、可编译 -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <!-- 语言包随程序发布到输出目录的 Languages/，用户可直接编辑或替换 -->
+  <ItemGroup>
+    <None Include="..\AudioRouter.Core\Languages\*.json" Link="Languages\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- GUI 只保留表现层；音频、路由、语言、设置全部来自跨平台核心库 -->
+  <ItemGroup>
+    <ProjectReference Include="..\AudioRouter.Core\AudioRouter.Core.csproj" />
+  </ItemGroup>
+
+  <!-- 窗口图标：链接同一份 .ico（不复制内容） -->
+  <ItemGroup>
+    <Resource Include="..\AudioRouter.Desktop\Assets\app.ico" Link="Assets\app.ico" />
+  </ItemGroup>
+
+</Project>
