@@ -5,6 +5,45 @@
 
 ---
 
+## [0.12.0] — 2026-10-07
+
+### Windows audio redirection actually works now / Windows 上真的能改道了
+
+Earlier text in this file said this build could not redirect audio on Windows. That is no longer true:
+the routing intent is now dispatched to the original project's injected native core.
+
+（本文件此前写着"本构建在 Windows 上不能改道"—— 这句话现在不成立了：路由意图已经能真正下发到
+上游的注入式原生核心。）
+
+**Verified on real Windows 11 hardware** with the upstream 0.10.2 binaries / **已在真实 Windows 11 上验证**：
+
+| Test / 试验 | Result / 结果 |
+| --- | --- |
+| Inject with the default device, then start the program | session stays on the default device ✓ |
+| Inject with a virtual cable *before* the program opens its stream | session leaves the default device ✓ |
+| Route (flag=1) then duplicate (flag=2) | both devices stay attached ✓ |
+
+**Two conditions** (details in the README) / **两个前提**（详见 README）：
+
+1. The upstream native core must sit in a `native\` folder next to the app — this repository ships the
+   client for that core, not the core itself.
+2. The routed program must (re)create its audio stream after the injection: the core hooks
+   `IMMDevice::Activate`, so only streams opened *afterwards* are affected.
+
+Defects found and fixed along the way / 顺带修掉的真缺陷：
+
+- The shared-memory handle was closed before `do.exe` ran, so the injected DLL saw no parameters and the
+  load failed with the misleading `1114 DLL initialization routine failed`.
+- The upstream `audio-router.dll` collides with this project's CLI assembly name — the native files must
+  live in a subfolder (the runtime probe already looks there).
+- `duplicate` *appends* to the device list instead of replacing it, so the first dispatch for a process
+  has to establish a baseline; otherwise the default device is silently dropped.
+- `RoutingOutcome.Failed` used to be printed as "recorded … not redirected", hiding real failures.
+
+Release assets follow the same layout as 0.11.0; see the README for the native-core step.
+发布包布局与 0.11.0 相同；原生核心那一步见 README。
+
+---
 ## [0.11.0] — 2026-10-07
 
 ### ⚠️ Read before downloading / 下载前先读

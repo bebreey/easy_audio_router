@@ -29,35 +29,38 @@ forget to give the original project a star — this wouldn't exist without it:
 
 ## Read this first: what works, and what does not
 
-This fork modernizes the **interface and tooling**. It does **not** yet ship the audio redirection
-engine on Windows. Saying that up front is more useful than a feature list:
+This fork modernizes the **interface and tooling**, and it **really redirects audio on Windows**
+through the original project's injected native core.
 
 | Capability | Windows | Linux | macOS |
 | --- | --- | --- | --- |
 | List output devices, including format (`32 bit float · 48 kHz · 2ch`) | ✅ tested | ✅ code complete | — |
 | List programs playing audio (volume / mute / playing) | ✅ tested | ✅ code complete | — |
 | Real per-app **mute** | ✅ tested | ✅ code complete | — |
-| **Redirect one program's audio to a chosen device** | ❌ **not in this build** — needs the injected native core *and* an IPC client this build does not implement | ⚠️ implemented (`pactl move-sink-input`), **not verified on real PipeWire** | ❌ needs a virtual audio device |
-| Duplicate one program to several devices | ❌ same as above | ❌ needs `module-combine-sink` | ❌ |
+| **Redirect one program's audio to a chosen device** | ✅ **tested on real hardware** — see the two conditions below | ⚠️ implemented (`pactl move-sink-input`), **not verified on real PipeWire** | ❌ needs a virtual audio device |
+| Duplicate one program to several devices | ✅ tested (route first, then duplicate) | ❌ needs `module-combine-sink` | ❌ |
 | Saved routings, auto-applied when the app appears again (keyed by **executable path**, so it survives restarts) | ✅ tested | ✅ code complete | ✅ |
 | Dark UI, drag & drop, context menus, per-app icons, English / 中文 | ✅ tested | ✅ same UI | ✅ same UI |
 | Headless CLI (no desktop environment required) | ✅ tested | ✅ code complete | ✅ |
 
-**Why redirection is not here yet:** on Windows, moving another program's audio requires injecting
-native code into that process (that is how the original project does it). This build neither ships
-that native core (`audio-router.dll` + `do.exe`) nor implements the client that talks to it — writing
-the routing table into the `Local\audio-router-file` shared-memory mapping and launching `do.exe` to
-perform the injection. On Linux the backend **is** implemented; it is only unverified.
+### Redirection on Windows: two conditions
+
+1. **The native core must sit next to the app.** Windows cannot move another program's audio without
+   injecting code into that program. This repository ships the *client* for that core, not the core
+   itself: copy `do.exe`, `do64.exe`, `audio-router.dll` and `audio-router64.dll` from the upstream
+   0.10.2 release into a `native\` folder next to `AudioRouter.Desktop.exe` / `audio-router.exe`.
+   The app probes for them at runtime and says so honestly when they are missing
+   (`audio-router doctor` → *Can redirect audio: no*).
+2. **The program must (re)create its audio stream after being routed.** The core hooks
+   `IMMDevice::Activate`, so it only affects streams opened *after* the injection. Route it first and
+   then start it — or restart it if it is already playing. The CLI says this after every dispatch.
+
 Notes that matter:
 
-- **Upstream 0.10.2 can redirect audio on Windows; this build cannot yet.** If you need redirection
-  today, use the upstream release. This fork's value right now is the UI, the CLI, the cross-platform
-  core, and the routing model.
-- "Code complete, not verified" means exactly that: the Linux backend's *command lines* are covered by
-  tests, but it has never been run against a real PipeWire/PulseAudio server.
-- The app never fabricates data: when something is unavailable it says so (that is why the status bar
-  reads *"Routes recorded only (not dispatched on this platform)"*).
-
+- "Code complete, not verified" is meant literally: the Linux backend's *command lines* are covered by
+  tests, but they have never run against a real PipeWire/PulseAudio server.
+- Injecting into an app that runs elevated needs Audio Router itself to run as administrator.
+- The app never fabricates data: when something is unavailable it says so instead of guessing.
 ## Projects
 
 ```
