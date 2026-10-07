@@ -40,8 +40,27 @@ Defects found and fixed along the way / 顺带修掉的真缺陷：
   has to establish a baseline; otherwise the default device is silently dropped.
 - `RoutingOutcome.Failed` used to be printed as "recorded … not redirected", hiding real failures.
 
-Release assets follow the same layout as 0.11.0; see the README for the native-core step.
-发布包布局与 0.11.0 相同；原生核心那一步见 README。
+### Downloads / 下载
+
+| File | Platform |
+| --- | --- |
+| `AudioRouter-0.12.0-win-x64.zip` | Windows 10/11 **x64** — GUI + CLI **+ 原生核心**（已放在 `native\`，无需再装/再拷） |
+| `AudioRouter-0.12.0-win-arm64.zip` | Windows on ARM64 — GUI + CLI；**不含原生核心**（上游只提供 x86/x64 两套工具，ARM64 上无法使用） |
+| `AudioRouter-0.12.0-linux-x64.zip` | Linux x64 (glibc) — GUI + CLI；路由走音频服务器，不需要原生核心 |
+| `AudioRouter-0.12.0-linux-arm64.zip` | Linux ARM64 (glibc) — 同上 |
+| `AudioRouter-0.12.0-linux-musl-x64.zip` | Linux x64 musl (Alpine) — 同上 |
+
+```
+a594767797ef95a3ef089d1b3f5dc6df0b9f525ae625e69a34f247a42802469a  AudioRouter-0.12.0-linux-arm64.zip
+5fb644a8668939d81e17951195968b540cef0f7d290bf93f334720fdfc249c32  AudioRouter-0.12.0-linux-musl-x64.zip
+94d351dc474be8ec38e8008b2e04b74072065d9a1d50159daca82c16f34a8425  AudioRouter-0.12.0-linux-x64.zip
+10efe97be8e70f00ed55f8c4dd3e49a9eebfc01a81b0c2400f81d8e3900e7b51  AudioRouter-0.12.0-win-arm64.zip
+46d2763c203c591ad7f2a340cd0b03749756929226b84edc60e39275954c5758  AudioRouter-0.12.0-win-x64.zip
+```
+
+**Verified after packaging** / **打包后复验**：把 zip 解压到干净目录、用**包里的 CLI** 实跑 ——
+`doctor` 报 *Can redirect audio: yes*，并且对一个**尚未打开音频流**的进程真的完成了改道
+（会话从默认设备移到指定设备）。这一步单独做的原因：构建通过 ≠ 发布包能用。
 
 ---
 ## [0.11.0] — 2026-10-07

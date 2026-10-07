@@ -38,6 +38,16 @@
   **不包含** `third-party/` 与依赖它的 `audio-router-gui/`，其余部分（含路由核心）不受影响。
 - 本仓库按 CPL-1.0 要求保留其版权与许可声明，未作修改。
 
+### 随发布包分发的上游二进制 / Upstream binaries bundled with the release
+
+`AudioRouter-0.12.0-win-x64.zip` 内含上游 0.10.2 的四个二进制 —— `do.exe`、`do64.exe`、
+`audio-router.dll`、`audio-router64.dll`（位于 `native\`）—— **未经修改**，依 GPL-3.0 随本作品一同分发。
+其对应源码即上游仓库 https://github.com/audiorouterdev/audio-router （GPL-3.0）。
+
+**为什么必须带上**：Windows 上要把别的程序的音频改道，必须往目标进程注入这份原生代码。
+本仓库提供的是与它通信的**客户端**，不含核心本体（本机也没有编译器能构建它）。
+
+`win-arm64` 包**不含**该核心：上游只提供 x86/x64 两套，在 ARM64 上无法使用 —— 这一点如实写在发布说明里。
 ## 本仓库是否可以直接开源？
 
 按照 GPLv3 的要求，**可以**公开发布，前提是做到：

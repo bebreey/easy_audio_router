@@ -43,7 +43,7 @@
 ### Windows 上改道的两个前提
 
 1. **原生核心必须放在程序旁边。** Windows 上要把别的程序的音频挪走，必须往那个程序里注入代码。
-   本仓库提供的是与核心通信的**客户端**，不含核心本体：请从上游 0.10.2 的发布包里取出
+   本仓库提供的是与核心通信的**客户端**，不含核心本体：**Windows x64 发布包已经自带**（就在 `native\` 里，不需要再拷）。若要自己部署，请从上游 0.10.2 的发布包里取出
    `do.exe`、`do64.exe`、`audio-router.dll`、`audio-router64.dll`，放到 `AudioRouter.Desktop.exe` /
    `audio-router.exe` 同级的 `native\` 目录下。程序会在运行时探测它们，缺了就如实报告
    （`audio-router doctor` → *Can redirect audio: no*）。

@@ -47,8 +47,9 @@ through the original project's injected native core.
 
 1. **The native core must sit next to the app.** Windows cannot move another program's audio without
    injecting code into that program. This repository ships the *client* for that core, not the core
-   itself: copy `do.exe`, `do64.exe`, `audio-router.dll` and `audio-router64.dll` from the upstream
-   0.10.2 release into a `native\` folder next to `AudioRouter.Desktop.exe` / `audio-router.exe`.
+   itself: the **Windows x64 release package already contains them** in `native\` — nothing to copy.
+   For any other setup, take `do.exe`, `do64.exe`, `audio-router.dll` and `audio-router64.dll` from the
+   upstream 0.10.2 release and put them in a `native\` folder next to `AudioRouter.Desktop.exe`.
    The app probes for them at runtime and says so honestly when they are missing
    (`audio-router doctor` → *Can redirect audio: no*).
 2. **The program must (re)create its audio stream after being routed.** The core hooks

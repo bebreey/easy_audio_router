@@ -1,0 +1,16 @@
+<Project>
+
+  <!--
+    统一版本号：发布包文件名、程序集版本、文件属性都取这里。
+    放在仓库根，所有工程自动继承，避免"改一处漏一处"。
+  -->
+  <PropertyGroup>
+    <Version>0.12.0</Version>
+    <Product>Audio Router</Product>
+    <Authors>bebreey</Authors>
+    <Company>Audio Router</Company>
+    <!-- 上游是 GPL-3.0；本仓库是派生作品，必须继续以同一许可发布 -->
+    <Copyright>based on audiorouterdev/audio-router (GPL-3.0)</Copyright>
+  </PropertyGroup>
+
+</Project>
