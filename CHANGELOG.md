@@ -58,20 +58,42 @@ Windows today, use the [upstream 0.10.2 release](https://github.com/audiorouterd
 
 | File | Platform |
 | --- | --- |
-| `AudioRouter-0.11.0-win-x64.zip` | Windows 10/11 x64 — contains `AudioRouter.Desktop.exe` (GUI) and `audio-router.exe` (CLI). Self-contained, no .NET runtime needed. |
-| `AudioRouter-0.11.0-linux-x64.zip` | Linux x64 — same two programs. Self-contained. |
+| `AudioRouter-0.11.0-win-x64.zip` | Windows 10/11 x64 — `AudioRouter.Desktop.exe` (GUI) + `audio-router.exe` (CLI). Self-contained, no .NET runtime needed. |
+| `AudioRouter-0.11.0-win-arm64.zip` | Windows on ARM64 — same two programs. Self-contained. |
+| `AudioRouter-0.11.0-linux-x64.zip` | Linux x64 (glibc) — same two programs. Self-contained. |
+| `AudioRouter-0.11.0-linux-arm64.zip` | Linux ARM64 (glibc) — same two programs. Self-contained. |
+| `AudioRouter-0.11.0-linux-musl-x64.zip` | Linux x64 musl (Alpine) — same two programs. Self-contained. |
+
+No macOS build: the macOS backend is a stub, so the app would open with demo data and no audio
+subsystem. Shipping that would only generate "it does nothing" reports.
+（不提供 macOS 包：该平台没有音频后端，装上也只会看到演示数据。）
 
 ```
-e5bd29bd14f37a1cb0d3f8bc073064d4454bb73bd8a9b2d5cf0ad720635ad5e4  AudioRouter-0.11.0-linux-x64.zip
-a6523e87f97b691261161af5db35b51bd711d8a9914c8a1651935d9cbbb9ba40  AudioRouter-0.11.0-win-x64.zip
+4159787cbe93a46d4b57c414940f6e560146d08bd16890d664ffb5d7cdb8159b  AudioRouter-0.11.0-linux-arm64.zip
+331716bf9ad234905fa18e56d7238585dc3df2022de57a225d7c1b3478802e30  AudioRouter-0.11.0-linux-musl-x64.zip
+787623b592fb4f78af976a00d9c221b65afff691009364243cb7074b855bd8e2  AudioRouter-0.11.0-linux-x64.zip
+b8c9d70f7621d8aabdb642a79c32567b7c6a83f2ff4cced7b6c1a2143d22f006  AudioRouter-0.11.0-win-arm64.zip
+845da4fd6349360b26529bff445ba54c8f5d39dfcdf3bee5d5940032063da1dd  AudioRouter-0.11.0-win-x64.zip
 ```
 
-Quick smoke test after unzip:
+Quick smoke test after unzip / 解压后自检：
 
 ```text
 audio-router doctor        # 会如实告诉你这台机器能不能改道
 AudioRouter.Desktop.exe    # 图形界面
 ```
+
+### Fixed in this build / 本构建修复
+
+- **Minimize button glyph was invisible**: the geometry was a zero-height line, which
+  `Stretch="Uniform"` collapses to nothing. Fixed in **both** front-ends (the same geometry had the
+  same bug in the WPF one). 最小化图标曾不可见，两个前端都已修。
+- **Removed the per-app volume bar and percentage** from both front-ends — no information value, and
+  mute state is still shown by the icon. 移除应用行里的音量条与百分比（静音仍由图标表达）。
+- **Route storage hardened** against data loss: atomic replace (temp file + move), one valid `.bak`
+  generation, recovery from that backup when `routes.json` is damaged, and the damaged file kept as
+  `routes.corrupt-<timestamp>.json`. Covered by 8 new tests.
+  路由落盘加固：原子替换 + 保留一代有效备份 + 损坏时自动恢复 + 留存现场。
 
 ### Source / 源码
 

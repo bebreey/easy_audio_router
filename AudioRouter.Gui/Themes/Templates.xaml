@@ -176,16 +176,7 @@
                       Margin="0,0,8,0" VerticalAlignment="Center"
                       Visibility="{Binding IsMuted, Converter={StaticResource BoolToVis}}" />
 
-                <StackPanel Width="46" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding VolumePercent, StringFormat={}{0}%}" Style="{StaticResource Txt.Caption}"
-                               HorizontalAlignment="Right" />
-                    <Border Height="4" CornerRadius="2" Margin="0,4,0,0"
-                            Background="{StaticResource Brush.Bg.Sunken}">
-                        <Border Width="{Binding Volume, Converter={StaticResource VolumeToWidth}, ConverterParameter=40}"
-                                CornerRadius="2" HorizontalAlignment="Left"
-                                Background="{StaticResource Brush.Accent}" />
-                    </Border>
-                </StackPanel>
+                <!-- 音量条与百分比已按反馈移除（对用户没有信息量）；静音状态仍由上面的图标表达 -->
             </StackPanel>
         </Grid>
 

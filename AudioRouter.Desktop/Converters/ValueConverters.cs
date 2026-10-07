@@ -24,7 +24,9 @@ public static class Icons
     public static readonly Geometry Empty = Geometry.Parse("M8,1 A7,7 0 1 1 8,15 A7,7 0 1 1 8,1 Z M8,5 L8,9 M8,11 L8.01,11");
 
     // 窗口按钮（与 WPF 版同一批几何）
-    public static readonly Geometry WindowMinimize = Geometry.Parse("M0,0 L10,0");
+    // 最小化必须是有高度的**填充矩形**：写成 `M0,0 L10,0` 这种零高度线段时，
+    // 配 Stretch="Uniform" 会被压成 0 高度，图标直接消失（已踩过）。
+    public static readonly Geometry WindowMinimize = Geometry.Parse("M0,0 L10,0 L10,1 L0,1 Z");
     public static readonly Geometry WindowMaximize = Geometry.Parse("M0.5,0.5 L9.5,0.5 L9.5,9.5 L0.5,9.5 Z");
     public static readonly Geometry WindowRestore = Geometry.Parse("M0.5,3.5 L6.5,3.5 L6.5,9.5 L0.5,9.5 Z M3.5,3.5 L3.5,0.5 L9.5,0.5 L9.5,6.5 L6.5,6.5");
     public static readonly Geometry WindowClose = Geometry.Parse("M0,0 L9,9 M9,0 L0,9");

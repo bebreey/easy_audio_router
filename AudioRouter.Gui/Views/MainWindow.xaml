@@ -79,8 +79,8 @@
                     <Button Style="{StaticResource Btn.TitleBar}" Click="Minimize_Click"
                             ToolTip="{loc:Loc window.minimize}"
                             AutomationProperties.Name="{loc:Loc window.minimize}">
-                        <Path Data="{StaticResource Geo.Win.Min}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                              StrokeThickness="1.2" Width="10" Height="10" Stretch="Uniform" />
+                        <Path Data="{StaticResource Geo.Win.Min}" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              Width="10" Height="1.2" Stretch="Uniform" />
                     </Button>
                     <Button Style="{StaticResource Btn.TitleBar}" Click="MaximizeRestore_Click"
                             ToolTip="{loc:Loc window.maximize}"

@@ -15,7 +15,8 @@
     <PathGeometry x:Key="Geo.Route" Figures="M2,8 L11,8 M8,4.5 L11.5,8 L8,11.5" />
     <PathGeometry x:Key="Geo.Chevron" Figures="M1,1 L5,5 L9,1" />
     <PathGeometry x:Key="Geo.Refresh" Figures="M13.5,8 A5.5,5.5 0 1 1 8,2.5 M8,0.5 L8,4.5 L12,2.5" />
-    <PathGeometry x:Key="Geo.Win.Min" Figures="M0,0 L10,0" />
+    <!-- 最小化必须是有高度的填充矩形：零高度线段配 Stretch="Uniform" 会被压成 0 → 图标消失 -->
+    <PathGeometry x:Key="Geo.Win.Min" Figures="M0,0 L10,0 L10,1 L0,1 Z" />
     <PathGeometry x:Key="Geo.Win.Max" Figures="M0.5,0.5 L9.5,0.5 L9.5,9.5 L0.5,9.5 Z" />
     <PathGeometry x:Key="Geo.Win.Restore" Figures="M0.5,3.5 L6.5,3.5 L6.5,9.5 L0.5,9.5 Z M3.5,3.5 L3.5,0.5 L9.5,0.5 L9.5,6.5 L6.5,6.5" />
     <PathGeometry x:Key="Geo.Win.Close" Figures="M0,0 L9,9 M9,0 L0,9" />

@@ -82,12 +82,60 @@ public sealed class RouteStore
         var store = new RouteStore(path, persist);
         if (!persist) return store;
 
+        // 1) 正常读取
+        if (TryRead(store._path, out var records, out _))
+        {
+            store._routes.AddRange(records);
+            return store;
+        }
+
+        var primaryExists = File.Exists(store._path);
+
+        if (!primaryExists)
+        {
+            // 主文件不在（被删/首次运行）：若上一代备份还在，能捞就捞
+            if (TryRead(store._path + ".bak", out var fromBak, out _))
+            {
+                store._routes.AddRange(fromBak);
+                StartupLog.Write($"routes: {store._path} 不存在，已从 .bak 恢复 {fromBak.Count} 条");
+            }
+
+            return store;
+        }
+
+        // 2) 主文件存在但读不懂：先留下现场（可能被外部工具改坏，也可能只是写到一半）
+        BackupCorrupt(store._path);
+
+        // 3) 再用上一代好文件恢复 —— 这才是真正把记录救回来的那一步
+        if (TryRead(store._path + ".bak", out var recovered, out _))
+        {
+            store._routes.AddRange(recovered);
+            StartupLog.Write($"routes: 主文件损坏，已从 .bak 恢复 {recovered.Count} 条");
+        }
+
+        return store;
+    }
+
+    /// <summary>读取并解析；文件不存在或内容不可解析都算失败（失败时不留半截状态）。</summary>
+    private static bool TryRead(string path, out List<RouteRecord> records, out string error)
+    {
+        records = new List<RouteRecord>();
+        error = string.Empty;
+
         try
         {
-            if (!File.Exists(store._path)) return store;
+            if (!File.Exists(path))
+            {
+                error = "文件不存在";
+                return false;
+            }
 
-            var loaded = JsonSerializer.Deserialize<List<RouteRecord>>(File.ReadAllText(store._path), Options);
-            if (loaded is null) return store;
+            var loaded = JsonSerializer.Deserialize<List<RouteRecord>>(File.ReadAllText(path), Options);
+            if (loaded is null)
+            {
+                error = "内容为 null";
+                return false;
+            }
 
             foreach (var record in loaded)
             {
@@ -103,14 +151,32 @@ public sealed class RouteStore
                 }
             }
 
-            store._routes.AddRange(loaded);
+            records = loaded;
+            return true;
         }
         catch (Exception ex)
         {
-            StartupLog.Write($"routes: 读取 {store._path} 失败：{ex.Message}");
+            error = ex.Message;
+            return false;
         }
+    }
 
-        return store;
+    /// <summary>把读不懂的主文件另存一份，便于事后查看/手工抢救（不覆盖任何好文件）。</summary>
+    private static void BackupCorrupt(string path)
+    {
+        try
+        {
+            var backup = Path.Combine(
+                Path.GetDirectoryName(path)!,
+                $"routes.corrupt-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+
+            File.Copy(path, backup, overwrite: true);
+            StartupLog.Write($"routes: {path} 解析失败，已留下现场 {backup}");
+        }
+        catch (Exception ex)
+        {
+            StartupLog.Write($"routes: {path} 解析失败，且留存现场也失败：{ex.Message}");
+        }
     }
 
     public bool Exists(string key, string deviceId)
@@ -156,14 +222,44 @@ public sealed class RouteStore
     {
         if (!_persist) return;
 
+        // 原子落盘：先写临时文件，再整体替换。
+        // 直接 File.WriteAllText 会先截断原文件，写到一半被强杀就留下半截 json；
+        // 而半截 json 会让下次读取失败 —— 读取失败又会被当成"没有路由"，数据就这么没了。
+        var temp = _path + ".tmp";
+
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(_routes, Options));
+
+            // 留一代**有效**的上一版：主文件被外部改坏/截断时，这是唯一能把记录救回来的东西。
+            // 只备份能解析的文件 —— 否则会把损坏内容覆盖到好备份上（这条踩过）。
+            if (File.Exists(_path) && TryRead(_path, out _, out _))
+            {
+                try
+                {
+                    File.Copy(_path, _path + ".bak", overwrite: true);
+                }
+                catch (Exception ex)
+                {
+                    StartupLog.Write($"routes: 备份上一代失败（继续保存）：{ex.Message}");
+                }
+            }
+
+            File.WriteAllText(temp, JsonSerializer.Serialize(_routes, Options));
+            File.Move(temp, _path, overwrite: true);
         }
         catch (Exception ex)
         {
             StartupLog.Write($"routes: 写入 {_path} 失败：{ex.Message}");
+
+            try
+            {
+                if (File.Exists(temp)) File.Delete(temp);
+            }
+            catch
+            {
+                // 临时文件清理失败不影响主流程
+            }
         }
     }
 

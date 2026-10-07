@@ -47,6 +47,7 @@ internal static class Program
         TestLanguagePackParsing();
         TestLanguagePackEncoding();
         TestRouteStorePersistence();
+        TestRouteStoreDurability();
         TestRouteKey();
         TestRouteReconciler();
         TestDeviceRouteNotifications();
@@ -256,6 +257,76 @@ internal static class Program
             try
             {
                 if (File.Exists(path)) File.Delete(path);
+            }
+            catch
+            {
+                // 忽略
+            }
+        }
+    }
+
+    /// <summary>
+    /// 落盘健壮性：写入必须原子，读取失败必须留证据。
+    ///
+    /// 背景（真实失败链）：非原子写入被强杀会留下半截 json → 下次读取解析失败 →
+    /// 被当成"没有路由" → 随后一次保存就把用户记录**永久覆盖**。
+    /// </summary>
+    private static void TestRouteStoreDurability()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"audio-router-durability-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, "routes.json");
+
+        try
+        {
+            var store = new RouteStore(path);
+            store.Add(new RouteRecord
+            {
+                ExePath = @"C:\Apps\A.exe",
+                ProcessName = "A",
+                DeviceId = "sink-a",
+            });
+
+            Check("durability: no .tmp left behind",
+                Directory.GetFiles(dir, "routes.json.tmp").Length == 0);
+
+            for (var i = 0; i < 20; i++) store.Save();
+            Check("durability: survives repeated saves", RouteStore.Load(path).All.Count == 1);
+            Check("durability: previous good generation kept in .bak",
+                File.Exists(path + ".bak") && File.ReadAllText(path + ".bak").Contains("A.exe"));
+
+            // 主文件被外部改坏
+            const string broken = "{ this is not json";
+            File.WriteAllText(path, broken);
+
+            // 关键：不能"静默当没有路由"，必须能从上一代好文件恢复
+            var afterCorrupt = RouteStore.Load(path);
+            Check("durability: recovers the record from .bak",
+                afterCorrupt.All.Count == 1, afterCorrupt.All.Count.ToString());
+
+            var scenes = Directory.GetFiles(dir, "routes.corrupt-*.json");
+            Check("durability: corrupt file kept for forensics", scenes.Length == 1, string.Join(", ", scenes));
+            Check("durability: forensic copy keeps the broken bytes",
+                scenes.Length == 1 && File.ReadAllText(scenes[0]) == broken);
+
+            // 恢复之后再新增：坏文件**不能**把好备份覆盖掉
+            afterCorrupt.Add(new RouteRecord
+            {
+                ExePath = @"C:\Apps\B.exe",
+                ProcessName = "B",
+                DeviceId = "sink-b",
+            });
+
+            Check("durability: recovered record and the new one are both persisted",
+                RouteStore.Load(path).All.Count == 2);
+            Check("durability: good generation in .bak is not clobbered by the broken file",
+                File.ReadAllText(path + ".bak").Contains("A.exe"));
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(dir, recursive: true);
             }
             catch
             {
