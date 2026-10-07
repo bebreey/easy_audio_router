@@ -9,24 +9,37 @@
 
 ### Packaging: unzip and run / 打包：解压即用
 
-- **每个 zip 只解出一层文件夹**（`AudioRouter-0.12.1-win-x64/…`）—— 不会再往下载目录里倒 233 个文件。
-- **每个包内都有 `先看这里-怎么用.txt`**：三步上手 + 最常踩的四个坑，包括
-  「已在播放的应用要重启才生效」和 SmartScreen 提示怎么过。
-- Windows x64 包继续**自带原生核心**（`native\`），解压即用，不需要再拷贝任何文件。
-- ARM64 包不含原生核心（上游只提供 x86/x64 工具），包内文件与发布说明里都写明了这一点。
+- **Every zip extracts into one folder** — no more 233 loose files in your download folder.
+  **每个 zip 只解出一层文件夹** —— 不会再往你的下载目录里倒 233 个文件。
 
-> 为什么另出 0.12.1 而不是改 0.12.0：包的内容变了。标签、源码、校验和必须互相对应，
-> 否则会出现"标签指向的源码里写的校验和与实际附件对不上"。0.12.0 的资源已被本版取代。
+- **Every package ships `先看这里-怎么用.txt`**: the three steps, plus the four traps people actually
+  hit — including "an app that is already playing must be restarted" and how to get past the
+  SmartScreen prompt on a downloaded zip.
+  **每个包内都有 `先看这里-怎么用.txt`**：三步上手，外加最常踩的四个坑 —— 包括「已在播放的应用要重启才生效」
+  和下载来的 zip 被 SmartScreen 拦了怎么过。
+
+- **Windows x64** keeps bundling the native core (`native\`), so it really is unzip-and-run.
+  **Windows x64 包继续自带原生核心**（`native\`），真正解压即用，不需要再拷贝任何文件。
+
+- **ARM64 has no native core** — upstream only ships x86/x64 tools, so redirection is unavailable there.
+  This is written inside the package as well.
+  **ARM64 包不含原生核心** —— 上游只提供 x86/x64 工具，因此 ARM64 无法改道；包内文件里也写明了。
+
+> Why 0.12.1 instead of editing 0.12.0: the artifacts changed, and the tag, the source and the checksums
+> have to agree with each other — otherwise the checksums written in the tagged source no longer match
+> the attached binaries. 0.12.0's assets are superseded by this release.
+> 为什么另出 0.12.1 而不是改 0.12.0：包的内容变了，标签、源码、校验和必须互相对应，否则会出现
+> "标签指向的源码里写的校验和与实际附件对不上"。0.12.0 的资源已被本版取代。
 
 ### Downloads / 下载
 
-| File | Platform |
+| File / 文件 | Platform / 平台 |
 | --- | --- |
-| `AudioRouter-0.12.1-win-x64.zip` | Windows 10/11 **x64** — 图形界面 + 命令行 **+ 原生核心**（解压即用） |
-| `AudioRouter-0.12.1-win-arm64.zip` | Windows on ARM64 — 图形界面 + 命令行；不含原生核心（上游无 ARM64 工具，无法改道） |
-| `AudioRouter-0.12.1-linux-x64.zip` | Linux x64 (glibc) — 图形界面 + 命令行（路由走音频服务器，不需要原生核心） |
-| `AudioRouter-0.12.1-linux-arm64.zip` | Linux ARM64 (glibc) — 同上 |
-| `AudioRouter-0.12.1-linux-musl-x64.zip` | Linux x64 musl (Alpine) — 同上 |
+| `AudioRouter-0.12.1-win-x64.zip` | Windows 10/11 **x64** — GUI + CLI **+ native core**（解压即用 / unzip and run） |
+| `AudioRouter-0.12.1-win-arm64.zip` | Windows on ARM64 — GUI + CLI；**no native core**（上游无 ARM64 工具，无法改道） |
+| `AudioRouter-0.12.1-linux-x64.zip` | Linux x64 (glibc) — GUI + CLI（路由走音频服务器 / routing goes through the audio server） |
+| `AudioRouter-0.12.1-linux-arm64.zip` | Linux ARM64 (glibc) — same as above / 同上 |
+| `AudioRouter-0.12.1-linux-musl-x64.zip` | Linux x64 musl (Alpine) — same as above / 同上 |
 
 ```
 3085d0d50449b83c90dc4375d546e8e19c5051125708384a45a3638a7cb694e6  AudioRouter-0.12.1-linux-arm64.zip
@@ -36,9 +49,11 @@ f1ee80ef9c4c615851d928261670351b6880db5501719cf0d601ba22dcad5bca  AudioRouter-0.
 a42d274cd4c354b1038cb11b84d601ecb75a7526ff73585841988a9ff6bfe404  AudioRouter-0.12.1-win-x64.zip
 ```
 
-**Verified after packaging** / **打包后复验**：把 zip 解压到空目录（只得到一个文件夹）→ 用包里的 CLI 实跑：
-`doctor` 报 *Can redirect audio: yes*，并对一个**尚未打开音频流**的进程真的完成了改道
-（会话从默认设备移到指定设备）。
+**Verified after packaging / 打包后复验**：把 zip 解压到空目录（只得到一个文件夹）→ 用包里的 CLI 实跑：
+`doctor` 报 *Can redirect audio: yes*，并对一个**尚未打开音频流**的进程真的完成了改道（会话从默认设备移到指定设备）。
+Extracted the zip into an empty directory (exactly one folder came out), then drove that very copy:
+`doctor` reports *Can redirect audio: yes*, and routing a process that had not opened its audio stream
+yet moved it off the default device.
 
 ---
 ## [0.12.0] — 2026-10-07
