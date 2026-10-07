@@ -175,6 +175,16 @@ public partial class MainWindow : Window
 
         if (device is not null)
         {
+            // 拖的是【已有路由标签】落在设备上 = 把这条路由移动到该设备。
+            // 必须放在查会话之前：标签不是会话，_pids 为空，落到下面就会变成
+            // TryAddRoutes(0 个会话) → NotImplemented（这曾经让"移动路由"静默失败）。
+            if (_payload is RouteChip movedChip)
+            {
+                ViewModel.MoveRoute(movedChip, device);
+                StartupLog.Write($"drop: Moved → chip '{movedChip.DisplayName}' → '{device.FriendlyName}'");
+                return;
+            }
+
             var sessions = ViewModel.SessionsByPids(_pids);
             var outcome = ViewModel.TryAddRoutes(sessions, device);
             StartupLog.Write($"drop: {outcome} → '{device.FriendlyName}' x{sessions.Count}");

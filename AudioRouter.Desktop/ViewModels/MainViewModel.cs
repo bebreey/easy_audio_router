@@ -378,6 +378,41 @@ internal sealed class MainViewModel : ObservableObject
         return RoutingOutcome.Applied;
     }
 
+    /// <summary>
+    /// 把一条已有路由从它所在的设备移动到另一台设备（拖动路由标签即为本操作）。
+    ///
+    /// 底层用 <c>RoutingService.Move</c> —— 它**不下发卸载**，只改记录后把整套重新下发。
+    /// 这一点是刻意的：卸载是整条撤销，会把这次移动刚建立的设备列表一起撤掉，
+    /// 结果拖动看起来"什么都没发生"（这正是之前那个 NotImplemented 之外的坑）。
+    /// </summary>
+    public void MoveRoute(RouteChip? chip, AudioDevice target)
+    {
+        if (chip is null) return;
+
+        var source = FindDevice(chip);
+        if (source is null || ReferenceEquals(source, target)) return;
+
+        if (target.IsUnavailable)
+        {
+            ShowToast(Loc.T("toast.deviceUnavailable"), ToastKind.Warning, 3);
+            return;
+        }
+
+        var index = source.Routes.IndexOf(chip);
+        if (index < 0) return;
+
+        var outcome = _routing.Move(chip.RouteKey, source.Id, target.Id, target.FriendlyName);
+
+        if (outcome is RoutingOutcome.NotFound or RoutingOutcome.Failed)
+        {
+            return;   // 失败就不动界面，避免"看起来移动了其实没有"
+        }
+
+        source.Routes.RemoveAt(index);
+        target.Routes.Add(chip);
+        RecomputeRouteCounts();
+        RaiseDerived();
+    }
     public void RemoveRoute(RouteChip? chip)
     {
         if (chip is null) return;
